@@ -1,144 +1,332 @@
-<!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8">
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0f766e"><link rel="icon" href="icon-192.png">
 <title>Quiz Topografía</title>
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#1b2a3a">
-<link rel="icon" href="icon-192.png">
 <style>
-:root{--bg:#eef2f4;--fg:#1b2a3a;--card:#fff;--ln:#cfd8de;--ac:#1f6fb2;--ok:#2e7d4f;--ko:#b3372f;--mu:#5d6d7a;color-scheme:light dark}
-@media(prefers-color-scheme:dark){:root{--bg:#121a22;--fg:#e4ebf0;--card:#1b2630;--ln:#2e3b47;--ac:#5aa6e0;--ok:#5cc08a;--ko:#e5766d;--mu:#93a3b0}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-header{background:#1b2a3a repeating-radial-gradient(circle at 85% 120%,transparent 0 14px,#ffffff10 14px 15px);color:#fff;padding:12px 14px 0;position:sticky;top:0;z-index:5}
-header h1{font:600 20px Georgia,serif;margin:0 0 8px}nav{display:flex;gap:4px}
-nav button{flex:1;background:none;border:0;color:#cfe0ee;padding:9px 4px;font:inherit;border-bottom:3px solid transparent}nav button.on{color:#fff;border-color:#6cb4f0}
-main{max-width:760px;margin:0 auto;padding:12px}
-.card{background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:12px 14px;margin:0 0 10px}.card.wr{border-left:4px solid var(--ko)}
-button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:10px 14px;cursor:pointer}button.pri{background:var(--ac);border-color:var(--ac);color:#fff}button:disabled{opacity:.55}
-.op{display:block;width:100%;text-align:left;margin:6px 0}.op b{display:inline-block;width:1.6em}.op.sel{border-color:var(--ac);box-shadow:inset 0 0 0 1px var(--ac)}
-.op.ok,.r.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--card))}.op.ko,.r.ko{border-color:var(--ko);background:color-mix(in srgb,var(--ko) 18%,var(--card))}
-.r{padding:4px 8px;border:1px solid transparent;border-radius:6px}
-.ex{margin-top:8px;padding:8px 10px;border-left:3px solid var(--ac);background:color-mix(in srgb,var(--ac) 10%,var(--card));font-size:15px}
-.bar,.nav,.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bar{justify-content:space-between;margin-bottom:8px}.nav button{flex:1}
-.en{font-size:18px;margin:6px 0 10px}small,.mu{color:var(--mu)}.big{font:600 30px Georgia,serif;margin:4px 0}.okt{color:var(--ok)}.kot{color:var(--ko)}
-.st{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:10px}.st div{background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:8px 10px}.st b{display:block;font:600 22px Georgia,serif}
-details{border-top:1px solid var(--ln);padding:6px 0}summary{cursor:pointer;padding:4px 0}.tm{display:block;padding:5px 0 5px 12px}
-input,select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px}input[type=text]{width:100%}input[type=checkbox]{width:18px;height:18px;vertical-align:-3px}
-.h{width:100%;text-align:left;margin-bottom:6px}.msg{white-space:pre-wrap;font-size:14px}.warn{color:var(--ko);font-size:14px}
-</style></head><body>
-<header><h1>Quiz Topografía</h1><nav><button id=n-inicio onclick="ir('inicio')">Inicio</button><button id=n-hist onclick="ir('hist')">Historial</button><button id=n-sync onclick="ir('sync')">Sincronizar</button></nav></header>
-<main id=v></main>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#17212b;--mut:#6a7787;--bd:#e3e8ee;--ac:#0f766e;--ac2:#14b8a6;--acbg:#e6f5f3;
+--good:#15803d;--goodbg:#dcfce7;--mid:#b45309;--midbg:#fef3c7;--bad:#b91c1c;--badbg:#fee2e2;--sh:0 1px 2px rgba(16,24,40,.06),0 4px 14px rgba(16,24,40,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#0e141a;--card:#161e27;--tx:#e6ecf2;--mut:#8b99a8;--bd:#263240;--ac:#2dd4bf;--ac2:#14b8a6;--acbg:#12302d;
+--good:#4ade80;--goodbg:#12331f;--mid:#fbbf24;--midbg:#3a2d0c;--bad:#f87171;--badbg:#3b1717;--sh:0 1px 2px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.app{display:flex;min-height:100%}
+aside{width:224px;flex:none;background:var(--card);border-right:1px solid var(--bd);padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;padding:4px 10px 18px}
+.logo i{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:grid;place-items:center;color:#fff;font-style:normal;font-size:16px}
+.nav{display:flex;align-items:center;gap:10px;border:0;background:none;padding:10px 12px;border-radius:10px;color:var(--mut);font-weight:600;text-align:left;width:100%}
+.nav:hover{background:var(--bg);color:var(--tx)}.nav.on{background:var(--acbg);color:var(--ac)}
+.side-foot{margin-top:auto;font-size:12px;color:var(--mut);padding:10px}
+main{flex:1;min-width:0;padding:30px 36px 60px;max-width:1180px}
+body.focus aside{display:none}body.focus main{margin:0 auto}
+h1{font-size:24px;margin:0 0 4px}h2{font-size:16px;margin:0 0 14px}.sub{color:var(--mut);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;box-shadow:var(--sh)}
+.grid{display:grid;gap:16px}.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.g2{grid-template-columns:3fr 2fr}
+@media(max-width:980px){.g2{grid-template-columns:1fr}aside{display:none}main{padding:20px}}
+.mt{margin-top:16px}
+.kpi .kl{color:var(--mut);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi .kv{font-size:30px;font-weight:700;margin:2px 0}.kpi .ks{color:var(--mut);font-size:12px}
+.btn{border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:9px 16px;font-weight:600}
+.btn:hover{border-color:var(--ac)}.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+body.dk .btn.pri{color:#04201c}.btn.pri:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.big{padding:13px 26px;font-size:16px;border-radius:12px}
+.chip{border:1px solid var(--bd);background:var(--card);border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600;color:var(--mut)}
+.chip:hover{border-color:var(--ac)}.chip.on{background:var(--acbg);border-color:var(--ac);color:var(--ac)}
+.chip small{opacity:.7;font-weight:500}.chip:disabled{opacity:.35;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{flex:1}
+.badge{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700;background:var(--bg);color:var(--mut)}
+.good{color:var(--good)}.mid{color:var(--mid)}.bad{color:var(--bad)}
+.badge.good{background:var(--goodbg)}.badge.mid{background:var(--midbg)}.badge.bad{background:var(--badbg)}
+.bar{height:8px;border-radius:99px;background:var(--bg);overflow:hidden}.bar>i{display:block;height:100%;border-radius:99px;background:var(--ac2)}
+.bar.good>i{background:var(--good)}.bar.mid>i{background:var(--mid)}.bar.bad>i{background:var(--bad)}
+.empty{color:var(--mut);text-align:center;padding:36px 10px}
+table{width:100%;border-collapse:collapse}th{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:8px 10px;border-bottom:1px solid var(--bd)}
+td{padding:11px 10px;border-bottom:1px solid var(--bd)}tr.click{cursor:pointer}tr.click:hover td{background:var(--bg)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px}
+.tile{aspect-ratio:1;border-radius:8px;border:1px dashed var(--bd);background:none;font-size:12px;font-weight:700;color:var(--mut);display:grid;place-items:center}
+.tile.has{border:1px solid var(--bd);background:var(--bg)}.tile.good{background:var(--goodbg);border-color:transparent;color:var(--good)}
+.tile.mid{background:var(--midbg);border-color:transparent;color:var(--mid)}.tile.bad{background:var(--badbg);border-color:transparent;color:var(--bad)}
+.tile.has:hover{outline:2px solid var(--ac)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mut);margin-top:12px;flex-wrap:wrap}.legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.opt-type{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.type{text-align:left;border:2px solid var(--bd);background:var(--card);border-radius:14px;padding:16px}
+.type:hover{border-color:var(--ac2)}.type.on{border-color:var(--ac);background:var(--acbg)}.type:disabled{opacity:.45;cursor:not-allowed}
+.type b{display:block;margin-bottom:2px}.type span{color:var(--mut);font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:8px 16px;font-weight:600;color:var(--mut)}.seg button.on{background:var(--ac);color:#fff}
+body.dk .seg button.on{color:#04201c}
+label.lb{display:block;font-weight:700;margin:22px 0 8px}
+input[type=number]{width:90px;padding:7px 10px;border-radius:9px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit}
+/* quiz */
+.qtop{display:flex;align-items:center;gap:16px;margin-bottom:16px}.qtop .bar{flex:1;height:10px}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px 12px}
+.timer.warn{color:var(--bad);border-color:var(--bad)}
+.qlayout{display:grid;grid-template-columns:1fr 230px;gap:18px;align-items:start}
+@media(max-width:900px){.qlayout{grid-template-columns:1fr}}
+.qtext{font-size:19px;font-weight:600;line-height:1.45;margin:10px 0 20px}
+.opt{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;border:2px solid var(--bd);background:var(--card);border-radius:12px;padding:13px 16px;margin-bottom:10px}
+.opt:hover:not(:disabled){border-color:var(--ac2)}.opt .l{flex:none;width:28px;height:28px;border-radius:8px;background:var(--bg);display:grid;place-items:center;font-weight:700;font-size:13px}
+.opt.sel{border-color:var(--ac);background:var(--acbg)}.opt.sel .l{background:var(--ac);color:#fff}
+.opt.ok{border-color:var(--good);background:var(--goodbg)}.opt.ok .l{background:var(--good);color:#fff}
+.opt.ko{border-color:var(--bad);background:var(--badbg)}.opt.ko .l{background:var(--bad);color:#fff}
+.opt:disabled{cursor:default}.opt.dim{opacity:.55}
+.expl{background:var(--acbg);border-radius:12px;padding:13px 16px;margin-top:6px;font-size:14px}
+.navgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.navgrid button{aspect-ratio:1;border-radius:8px;border:1px solid var(--bd);background:var(--card);font-size:12px;font-weight:600;color:var(--mut)}
+.navgrid .ans{background:var(--acbg);color:var(--ac);border-color:var(--ac2)}.navgrid .ok{background:var(--goodbg);color:var(--good);border-color:transparent}
+.navgrid .ko{background:var(--badbg);color:var(--bad);border-color:transparent}.navgrid .cur{outline:2px solid var(--tx)}
+.kbd{font-size:12px;color:var(--mut);margin-top:12px}kbd{border:1px solid var(--bd);border-bottom-width:2px;border-radius:5px;padding:0 5px;font-size:11px;background:var(--card)}
+/* resultado */
+.hero{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.score{font-size:56px;font-weight:800;line-height:1}.score small{font-size:20px;color:var(--mut);font-weight:600}
+.tag{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:800;font-size:13px}
+.tag.good{background:var(--goodbg);color:var(--good)}.tag.bad{background:var(--badbg);color:var(--bad)}
+.rev{border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--card)}
+.rev.ko{border-left:5px solid var(--bad)}.rev.ok{border-left:5px solid var(--good)}.rev.bl{border-left:5px solid var(--mid)}
+.rev .o{padding:5px 10px;border-radius:8px;margin-top:5px;font-size:14px}.rev .o.c{background:var(--goodbg);color:var(--good);font-weight:600}.rev .o.w{background:var(--badbg);color:var(--bad);font-weight:600}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 20px;border-radius:10px;font-weight:600;z-index:9}
+svg text{fill:var(--mut);font-size:11px}
+@media(max-width:980px){aside{display:flex;flex-direction:row;position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;height:auto;z-index:8;padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:2px;border-right:0;border-top:1px solid var(--bd)}
+aside .logo,aside .side-foot{display:none}aside .nav{flex:1;flex-direction:column;gap:2px;padding:6px 2px;font-size:11px;text-align:center;justify-content:center}
+main{padding:16px 14px calc(86px + env(safe-area-inset-bottom))}body.focus main{padding-bottom:40px}main table{display:block;overflow-x:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="logo"><i>▲</i>Quiz Topografía</div>
+    <button class="nav" data-v="panel" onclick="go('panel')">📊&nbsp; Panel</button>
+    <button class="nav" data-v="nuevo" onclick="go('nuevo')">✍️&nbsp; Nuevo test</button>
+    <button class="nav" data-v="hist" onclick="go('hist')">🗂️&nbsp; Historial</button>
+    <button class="nav" data-v="banco" onclick="go('banco')">📚&nbsp; Banco</button>
+    <button class="nav" data-v="sync" onclick="go('sync')">☁️&nbsp; Sincronizar</button>
+    <div class="side-foot" id="foot"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+<script src="core.js"></script>
 <script>
-const $=s=>document.querySelector(s),LET='ABCD',S={},esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let Q=null,tok=null;
-const CFG0={bloques:{COM:{nombre:"Materias comunes",temas:"COM-01..COM-12",preguntas_examen:25},A:{nombre:"A) Administración geográfica",temas:"ESP-01..ESP-06",preguntas_examen:6},B:{nombre:"B) Geodesia y Geofísica",temas:"ESP-07..ESP-29",preguntas_examen:23},C:{nombre:"C) Geoinformación / Observación y Topografía",temas:"ESP-30..ESP-51",preguntas_examen:23},D:{nombre:"D) Cartografía y TIG",temas:"ESP-52..ESP-74",preguntas_examen:23}},examen:{opciones:4,penalizacion_por_error:0.3333333,puntos_maximos:20,puntos_aprobado:10,minutos:180}};
-// ---- almacenamiento local (IndexedDB)
-const DB=new Promise((ok,ko)=>{const r=indexedDB.open('quiz',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=ko});
-const kget=async k=>{const d=await DB;return new Promise(ok=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result)})};
-const kset=async(k,v)=>{const d=await DB;return new Promise(ok=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok})};
-const guardar=()=>Promise.all(['set','banco','config','mine','otros','dirty'].map(k=>kset(k,S[k])));
-// ---- utilidades (mismas reglas que app.py)
-const norm=t=>String(t).normalize('NFKD').replace(/[^\x00-\x7f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
-const codTema=t=>{t=String(t).trim().toUpperCase().replace(/_/g,'-').replace(/ /g,'-');const m=t.match(/^(COM|ESP)?-?(\d{1,2})$/);return m?`${m[1]||'ESP'}-${String(+m[2]).padStart(2,'0')}`:t};
-const rango=txt=>{const[a,b]=txt.split('..').map(codTema),p=a.split('-')[0],r=[];for(let n=+a.slice(-2);n<=+b.slice(-2);n++)r.push(`${p}-${String(n).padStart(2,'0')}`);return r};
-const normC=c=>{if(Number.isInteger(c)&&c>=1&&c<=4)return c-1;c=String(c).trim().toUpperCase();if(c&&LET.includes(c))return LET.indexOf(c);if(c&&'1234'.includes(c))return +c-1;throw new Error('correcta debe ser A-D')};
-const idP=async(t,e)=>t+'-'+[...new Uint8Array(await crypto.subtle.digest('SHA-1',new TextEncoder().encode(norm(e))))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,8);
-async function recargar(){const pr=[],av=[],vistas={},mapa={};
- for(const[b,d]of Object.entries(S.config.bloques))for(const t of rango(d.temas))mapa[t]=b;
- for(const[f,txt]of Object.entries(S.banco)){let datos;try{datos=JSON.parse(txt)}catch(e){av.push(f+': JSON no válido');continue}
-  let def={},lista=datos;if(!Array.isArray(datos)){def={...datos};delete def.preguntas;lista=datos.preguntas||[]}
-  for(const[n,p0]of lista.entries()){const p={...def,...p0};if(p.activa===false)continue;
-   try{const tema=codTema(p.tema),ops=p.opciones;
-    if(!ops||ops.length!=4||new Set(ops.map(o=>String(o).trim().toLowerCase().replace(/\s+/g,' '))).size!=4)throw new Error('necesita 4 opciones distintas');
-    if(!String(p.enunciado||'').trim())throw new Error('enunciado vacío');
-    const cor=normC(p.correcta);if(!mapa[tema])throw new Error('tema desconocido '+tema);
-    const id=p.id||await idP(tema,p.enunciado);if(vistas[id])throw new Error('duplicada');vistas[id]=1;
-    pr.push({id,tema,bloque:mapa[tema],pagina:p.pagina,enunciado:String(p.enunciado).trim(),opciones:ops.map(o=>String(o).trim()),correcta:cor,explicacion:p.explicacion||''})
-   }catch(e){av.push(`${f} #${n+1}: ${e.message}`)}}}
- S.pregs=pr;S.avisos=av;S.mapa=mapa}
-// ---- historial: unión de los ficheros de todos los dispositivos
-const hists=()=>[S.mine,...Object.values(S.otros)];
-function sesionesTodas(){const m=new Map();hists().forEach(h=>(h.sesiones||[]).forEach(s=>m.set(s.id||s.fecha+'|'+s.tipo,s)));return[...m.values()].sort((a,b)=>a.fecha<b.fecha?-1:1)}
-function histPreg(){const h={};hists().forEach(x=>{for(const[id,v]of Object.entries(x.base||{}))if(!h[id]||v.aciertos+v.fallos>h[id].aciertos+h[id].fallos)h[id]={...v}});
- const det={};for(const s of sesionesTodas())for(const d of s.detalle||[]){if(d.marca==null)continue;const x=det[d.id]??={aciertos:0,fallos:0,ultimo:null};if(d.marca===d.cor){x.aciertos++;x.ultimo='acierto'}else{x.fallos++;x.ultimo='fallo'}}
- return{...h,...det}}
-// ---- selección y test
-function elegir(pool,n,h){const sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
- if(n>=pool.length)return sh([...pool]);const w=p=>{const x=h[p.id];return !x?2:x.ultimo=='fallo'?3:x.ultimo=='acierto'?.7:1.5},rest=[...pool],res=[];
- while(res.length<n&&rest.length){let r=Math.random()*rest.reduce((s,p)=>s+w(p),0),i=0;for(;i<rest.length-1;i++){r-=w(rest[i]);if(r<=0)break}res.push(rest.splice(i,1)[0])}return res}
-const prep=p=>{const o=[0,1,2,3].sort(()=>Math.random()-.5);return{...p,ops:o.map(i=>p.opciones[i]),cor:o.indexOf(p.correcta)}};
-function go(tipo){const opt={modo:$('#modo').value,n:+$('#n').value,sel:[...document.querySelectorAll('.tm input:checked')].map(i=>i.value)};
- const h=histPreg(),cfg=S.config;let modo=opt.modo,titulo,lista=[],limite=null;
- if(tipo=='simulacro'){modo='examen';titulo='Simulacro oficial';limite=cfg.examen.minutos*60;for(const[b,d]of Object.entries(cfg.bloques))lista.push(...elegir(S.pregs.filter(p=>p.bloque==b),d.preguntas_examen,h))}
- else{let pool;if(tipo=='aleatorio'){pool=S.pregs;titulo='Aleatorias'}else if(tipo=='falladas'){pool=S.pregs.filter(p=>h[p.id]?.ultimo=='fallo');titulo='Falladas'}
-  else{const sel=new Set(opt.sel);pool=S.pregs.filter(p=>sel.has(p.tema));titulo=sel.size<=3?'Tema '+[...sel].sort().join(', '):sel.size+' temas'}
-  lista=elegir(pool,opt.n>0?opt.n:pool.length,h)}
- if(!lista.length)return alert('No hay preguntas para esa selección.');
- Q={titulo,modo,limite,qs:lista.map(prep),i:0,resp:lista.map(()=>null),t0:Date.now()};if(limite)Q.timer=setInterval(tick,1000);vistaQuiz()}
-function tick(){if(!Q?.limite)return;const r=Math.max(0,Q.limite-Math.floor((Date.now()-Q.t0)/1e3)),e=$('#cr');if(e)e.textContent=`⏱ ${Math.floor(r/60)}:${String(r%60).padStart(2,'0')}`;if(!r)terminar()}
-function vistaQuiz(){const q=Q.qs[Q.i],est=Q.modo=='estudio',m=Q.resp[Q.i],rev=est&&m!=null,ult=Q.i==Q.qs.length-1;
- $('#v').innerHTML=`<div class=bar><b>${esc(Q.titulo)}</b><span>${Q.i+1}/${Q.qs.length}</span><span id=cr></span></div>
- <div class=card><small>${q.tema}${q.pagina?' · pág. '+esc(q.pagina):''}</small><p class=en>${esc(q.enunciado)}</p>
- ${q.ops.map((o,k)=>`<button class="op ${rev?(k==q.cor?'ok':k==m?'ko':''):(m==k?'sel':'')}" onclick="resp(${k})" ${rev?'disabled':''}><b>${LET[k]}</b>${esc(o)}</button>`).join('')}
- ${rev&&q.explicacion?`<div class=ex>${esc(q.explicacion)}</div>`:''}</div>
- <div class=nav>${est?'':`<button onclick="mover(-1)" ${Q.i?'':'disabled'}>◀</button>`}<button onclick="${est?'mover(1)':'blanco()'}">${est?'Saltar':'En blanco'}</button><button class=pri onclick="${ult?'terminar()':'mover(1)'}">${ult?'Terminar':'Siguiente ▶'}</button></div>
- ${est||ult?'':'<p><button class=h onclick="confirm(\'¿Terminar el test?\')&&terminar()">Terminar ahora</button></p>'}`;tick()}
-function resp(k){Q.resp[Q.i]=Q.modo!='estudio'&&Q.resp[Q.i]==k?null:k;vistaQuiz()}
-function blanco(){Q.resp[Q.i]=null;mover(1)}
-function mover(d){const i=Q.i+d;if(i>=0&&i<Q.qs.length){Q.i=i;vistaQuiz()}else if(i>=Q.qs.length)terminar()}
-async function terminar(){clearInterval(Q.timer);const ex=S.config.examen,rs=Q.qs.map((p,i)=>[p,Q.resp[i]]);
- const ac=rs.filter(([p,m])=>m!=null&&m==p.cor).length,er=rs.filter(([p,m])=>m!=null&&m!=p.cor).length,bl=rs.length-ac-er;
- const nota=+(Math.max(0,ac-er*ex.penalizacion_por_error)*ex.puntos_maximos/(rs.length||1)).toFixed(2);
- const ses={id:crypto.randomUUID(),fecha:new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,19),tipo:Q.titulo,modo:Q.modo,aciertos:ac,errores:er,blancos:bl,nota,minutos:+((Date.now()-Q.t0)/6e4).toFixed(1),
-  detalle:rs.map(([p,m])=>({id:p.id,tema:p.tema,pagina:p.pagina,enunciado:p.enunciado,ops:p.ops,cor:p.cor,marca:m,expl:p.explicacion}))};
- S.mine.sesiones.push(ses);Q=null;await guardar();$('#v').innerHTML=resumen(ses)+detalle(ses);scrollTo(0,0);if(tok)sync().catch(()=>{})}
-// ---- vistas
-const resumen=s=>{const n=s.aciertos+s.errores+s.blancos,ap=s.nota>=S.config.examen.puntos_aprobado;return`<div class=card><b>${esc(s.tipo)}</b> <small>${s.fecha.replace('T',' ')}</small><p class=big>${s.nota}/${S.config.examen.puntos_maximos} <small class="${ap?'okt':'kot'}">${ap?'APTO':'NO APTO'}</small></p><div>✔ ${s.aciertos} &nbsp; ✘ ${s.errores} &nbsp; ○ ${s.blancos} &nbsp; ${n?Math.round(100*s.aciertos/n):0}% &nbsp; ${s.minutos??'?'} min</div></div>`};
-const detalle=s=>(s.detalle||[]).map(d=>`<div class="card ${d.marca==d.cor?'':'wr'}"><small>${d.tema}${d.pagina?' · pág. '+esc(d.pagina):''}</small><p>${esc(d.enunciado)}</p>${d.ops.map((o,k)=>`<div class="r ${k==d.cor?'ok':k==d.marca?'ko':''}">${LET[k]}) ${esc(o)}</div>`).join('')}${d.expl?`<div class=ex>${esc(d.expl)}</div>`:''}</div>`).join('')||'<p class=mu>Este intento no guardó el detalle.</p>';
-function ir(v){if(Q&&!confirm('¿Abandonar el test en curso?'))return;if(Q)clearInterval(Q.timer);Q=null;['inicio','hist','sync'].forEach(x=>$('#n-'+x).classList.toggle('on',x==v));({inicio:vInicio,hist:vHist,sync:vSync})[v]()}
-function vInicio(){if(!S.pregs.length){$('#v').innerHTML='<div class=card><b>Aún no hay preguntas.</b><p>Abre «Sincronizar» para importar tus archivos del banco o descargarlos de Google Drive.</p></div>';return}
- const h=histPreg(),ses=sesionesTodas(),nf=S.pregs.filter(p=>h[p.id]?.ultimo=='fallo').length,f=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10),dias=new Set(ses.map(s=>s.fecha.slice(0,10)));
- let racha=0,d=new Date();if(!dias.has(f(d)))d=new Date(d-864e5);while(dias.has(f(d))){racha++;d=new Date(d-864e5)}
- const tot=ses.reduce((a,s)=>a+s.aciertos+s.errores+s.blancos,0),tac=ses.reduce((a,s)=>a+s.aciertos,0),u=ses.slice(-5).map(s=>s.nota),T={};
- S.pregs.forEach(p=>{const t=T[p.tema]??={n:0,ac:0,fa:0},x=h[p.id];t.n++;if(x){t.ac+=x.aciertos;t.fa+=x.fallos}});
- const bl=Object.entries(S.config.bloques).map(([b,d])=>{const ts=Object.keys(S.mapa).filter(t=>S.mapa[t]==b&&T[t]).sort();return`<details><summary>${esc(d.nombre)} <small>${ts.reduce((a,t)=>a+T[t].n,0)} preg.</small></summary>${ts.map(t=>{const x=T[t];return`<label class=tm><input type=checkbox value=${t}> ${t} <small>${x.n} preg. · ${x.ac+x.fa?Math.round(100*x.ac/(x.ac+x.fa))+'% acierto':'sin hacer'}</small></label>`}).join('')||'<small>Sin preguntas</small>'}</details>`}).join('');
- $('#v').innerHTML=`<div class=st><div><b>${S.pregs.length}</b><small>preguntas</small></div><div><b>${racha}</b><small>días seguidos</small></div><div><b>${tot?Math.round(100*tac/tot)+'%':'–'}</b><small>acierto global</small></div><div><b>${u.length?(u.reduce((a,b)=>a+b,0)/u.length).toFixed(1):'–'}</b><small>nota media (5)</small></div><div><b>${nf}</b><small>falladas</small></div></div>
- <div class=card><div class=row><select id=modo><option value=estudio>Modo estudio</option><option value=examen>Modo examen</option></select><label>Nº <input id=n type=number value=20 min=0 style="width:70px"></label><small>0 = todas</small></div>
- <div class=row style="margin-top:10px"><button class=pri onclick="go('simulacro')">Simulacro oficial</button><button onclick="go('aleatorio')">Aleatorias</button><button onclick="go('falladas')" ${nf?'':'disabled'}>Falladas (${nf})</button></div></div>
- <div class=card><b>Por temas</b>${bl}<p><button onclick="go('temas')">Practicar selección</button></p></div>
- ${S.avisos.length?`<details class=warn><summary>${S.avisos.length} avisos del banco</summary>${S.avisos.map(esc).join('<br>')}</details>`:''}`}
-function vHist(){const ses=sesionesTodas().reverse();$('#v').innerHTML=ses.length?ses.map((s,i)=>`<button class=h onclick="verSes(${i})"><b>${s.nota}</b>/${S.config.examen.puntos_maximos} · ${esc(s.tipo)}<br><small>${s.fecha.replace('T',' ')} · ✔${s.aciertos} ✘${s.errores} ○${s.blancos}</small></button>`).join(''):'<p class=mu>Todavía no has hecho ningún test.</p>';S.verLista=ses}
-function verSes(i){const s=S.verLista[i];$('#v').innerHTML=`<p><button onclick="vHist()">◀ Volver</button></p>`+resumen(s)+detalle(s)}
-function vSync(){const nb=Object.keys(S.banco).length;$('#v').innerHTML=`<div class=card><b>Google Drive</b><p class=mu>Se guarda en la carpeta «QuizTopografia» de tu Drive. Cada dispositivo escribe solo su propio historial y lee el de los demás, así que nunca se pisan.</p>
- <p>ID de cliente de Google<br><input type=text id=cid value="${esc(S.set.clientId||'')}" placeholder="xxxx.apps.googleusercontent.com" onchange="S.set.clientId=this.value.trim();guardar()"></p>
- <button class=pri onclick="doSync()">Conectar y sincronizar</button><p id=sm class=msg></p></div>
- <div class=card><b>Importar archivos</b><p class=mu>Banco (.json), config.json e historial.json de la versión de Windows. Puedes elegir varios a la vez.</p><input type=file multiple accept=".json,application/json" onchange="importar(this.files)"><p id=im class=msg></p></div>
- <div class=card><small>Banco local: ${nb} archivos, ${S.pregs.length} preguntas · Intentos: ${sesionesTodas().length} · Dispositivo: ${S.set.dev}</small></div>`}
-async function doSync(){const m=$('#sm');m.textContent='Sincronizando…';try{await sync();m.textContent=`Listo. ${S.pregs.length} preguntas y ${sesionesTodas().length} intentos en total.`}catch(e){m.textContent='Error: '+e.message}}
-async function importar(files){const m=[];for(const f of files){const t=await f.text();let j;try{j=JSON.parse(t)}catch{m.push(f.name+': JSON no válido');continue}
- if(j&&!Array.isArray(j)&&(Array.isArray(j.sesiones)||(j.preguntas&&!Array.isArray(j.preguntas)))){const ids=new Set(S.mine.sesiones.map(s=>s.id));
-  for(const s of j.sesiones||[]){s.id=s.id||'old-'+s.fecha+'|'+s.tipo;if(!ids.has(s.id)){ids.add(s.id);S.mine.sesiones.push(s)}}
-  for(const[id,v]of Object.entries(j.preguntas||{}))S.mine.base[id]=v;m.push(f.name+': historial importado')}
- else if(j&&j.bloques&&j.examen){S.config=j;S.dirty['config.json']=1;m.push(f.name+': configuración')}
- else{S.banco[f.name]=t;S.dirty['banco-'+f.name]=1;m.push(f.name+': banco')}}
- await recargar();await guardar();$('#im').textContent=m.join('\n')+'\nPulsa «Conectar y sincronizar» para subirlo a Drive.'}
-// ---- Google Drive
-const gsi=()=>window.google?.accounts?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=ok;s.onerror=()=>ko(new Error('Sin conexión'));document.head.appendChild(s)});
-const api=async(u,o={})=>{const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+tok,...(o.headers||{})}});if(!r.ok)throw new Error('Drive '+r.status);return o.raw?r:r.json()};
-const D='https://www.googleapis.com/drive/v3/files';
-async function carpeta(){const r=await api(`${D}?q=${encodeURIComponent("name='QuizTopografia' and mimeType='application/vnd.google-apps.folder' and trashed=false")}&fields=files(id)`);
- return r.files[0]?.id||(await api(D,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'QuizTopografia',mimeType:'application/vnd.google-apps.folder'})})).id}
-async function subir(fid,name,text,lst){const ex=lst.find(f=>f.name==name),fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,...(ex?{}:{parents:[fid]})})],{type:'application/json'}));fd.append('file',new Blob([text],{type:'application/json'}));
- await api(`https://www.googleapis.com/upload/drive/v3/files${ex?'/'+ex.id:''}?uploadType=multipart`,{method:ex?'PATCH':'POST',body:fd})}
-async function sync(){if(!tok){if(!S.set.clientId)throw new Error('Falta el ID de cliente de Google');await gsi();
-  await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:S.set.clientId,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(new Error(r.error||'Acceso denegado'))}).requestAccessToken())}
- try{const fid=await carpeta(),lst=(await api(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files,mio='hist-'+S.set.dev+'.json';
-  for(const f of lst){if(f.name==mio||S.dirty[f.name])continue;const t=await(await api(`${D}/${f.id}?alt=media`,{raw:1})).text();
-   if(f.name.startsWith('banco-'))S.banco[f.name.slice(6)]=t;else if(f.name=='config.json')S.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))S.otros[f.name]=JSON.parse(t)}
-  for(const n of Object.keys(S.dirty))await subir(fid,n,n=='config.json'?JSON.stringify(S.config):S.banco[n.slice(6)],lst);
-  await subir(fid,mio,JSON.stringify(S.mine),lst);S.dirty={};await recargar();await guardar()}
- catch(e){if(/Drive 401/.test(e.message))tok=null;throw e}}
-// ---- arranque
-(async()=>{S.set=await kget('set')||{dev:Math.random().toString(36).slice(2,8)};S.banco=await kget('banco')||{};S.config=await kget('config')||CFG0;
- S.mine=await kget('mine')||{dev:S.set.dev,sesiones:[],base:{}};S.otros=await kget('otros')||{};S.dirty=await kget('dirty')||{};
- await guardar();await recargar();ir('inicio');if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js')})();
-</script></body></html>
+const $=s=>document.querySelector(s), L='ABCD';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fecha=i=>new Date(i).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+const cl=p=>p==null?'':p>=70?'good':p>=50?'mid':'bad';
+const fmt=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s%60).padStart(2,'0')};
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2800)}
+if(matchMedia('(prefers-color-scheme:dark)').matches)document.body.classList.add('dk');
+
+const S={view:'panel',nt:{tipo:'temas',modo:'estudio',n:20,sel:new Set()},q:null,res:null,ck:'pct',rf:'all'};
+
+function go(v,arg){
+  if(S.q&&v!=='quiz'&&!confirm('Hay un test en curso. ¿Abandonarlo sin guardar?'))return;
+  if(v!=='quiz'){stopTimer();S.q=null}
+  S.view=v;document.body.classList.toggle('focus',v==='quiz');
+  document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('on',b.dataset.v===v||(v==='res'&&b.dataset.v==='hist')||(v==='det'&&b.dataset.v==='hist')));
+  render(arg);scrollTo(0,0);
+}
+async function render(arg){
+  try{
+    const m=$('#main');
+    if(S.view==='panel')m.innerHTML=await vPanel();
+    else if(S.view==='nuevo')m.innerHTML=await vNuevo();
+    else if(S.view==='hist')m.innerHTML=await vHist();
+    else if(S.view==='banco')m.innerHTML=await vBanco();
+    else if(S.view==='sync')m.innerHTML=vSync();
+    else if(S.view==='quiz')m.innerHTML=vQuiz();
+    else if(S.view==='res')m.innerHTML=vRes(S.res,true);
+    else if(S.view==='det'){const r=await api('sesion?i='+arg);S.res=r;m.innerHTML=vRes(r,false)}
+    if(S.view==='res'||S.view==='det')renderRev();
+    if(S.view==='quiz')tick();
+  }catch(e){$('#main').innerHTML=`<div class="card"><h2>No se pudo cargar</h2><p class="bad">${esc(e.message)}</p></div>`}
+}
+
+/* ---------- componentes ---------- */
+const kpi=(l,v,s='')=>`<div class="card kpi"><div class="kl">${l}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
+const bar=(p,c)=>`<div class="bar ${c??cl(p)}"><i style="width:${p||0}%"></i></div>`;
+
+function chart(ses,key,apr){
+  if(!ses.length)return'<div class="empty">Aún no hay intentos.<br>Haz tu primer test para ver aquí la evolución.</div>';
+  const W=640,H=230,p={l:38,r:14,t:14,b:26},max=key==='pct'?100:20,iw=W-p.l-p.r,ih=H-p.t-p.b;
+  const x=i=>p.l+(ses.length===1?iw/2:i*iw/(ses.length-1)),y=v=>p.t+ih*(1-Math.min(v,max)/max);
+  let g='';for(let k=0;k<=4;k++){const v=max*k/4;g+=`<line x1="${p.l}" x2="${W-p.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--bd)"/><text x="${p.l-8}" y="${y(v)+4}" text-anchor="end">${Math.round(v)}</text>`}
+  const ref=key==='pct'?50:apr, pts=ses.map((s,i)=>[x(i),y(s[key])]), line=pts.map((q,i)=>(i?'L':'M')+q[0]+' '+q[1]).join(' ');
+  const area=line+` L${pts.at(-1)[0]} ${y(0)} L${pts[0][0]} ${y(0)} Z`;
+  const dots=ses.map((s,i)=>`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="4.5" fill="var(--card)" stroke="var(--ac)" stroke-width="2.5" style="cursor:pointer" onclick="go('det',${s.i})"><title>${esc(s.tipo)} · ${fecha(s.fecha)}\n${s.aciertos}/${s.n} aciertos · ${s.pct}% · nota ${s.nota}</title></circle>`).join('');
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">${g}
+   <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac2)" stop-opacity=".28"/><stop offset="1" stop-color="var(--ac2)" stop-opacity="0"/></linearGradient></defs>
+   <line x1="${p.l}" x2="${W-p.r}" y1="${y(ref)}" y2="${y(ref)}" stroke="var(--mid)" stroke-dasharray="5 4"/>
+   <text x="${W-p.r}" y="${y(ref)-5}" text-anchor="end" style="fill:var(--mid)">${key==='pct'?'50 %':'aprobado '+apr}</text>
+   <path d="${area}" fill="url(#gr)"/><path d="${line}" fill="none" stroke="var(--ac)" stroke-width="2.5" stroke-linejoin="round"/>${dots}
+   <text x="${p.l}" y="${H-6}">intento 1</text><text x="${W-p.r}" y="${H-6}" text-anchor="end">intento ${ses.length}</text></svg>`;
+}
+function setCk(k){S.ck=k;$('#chart').innerHTML=chart(S.st.sesiones,k,S.st.apr);document.querySelectorAll('[data-ck]').forEach(b=>b.classList.toggle('on',b.dataset.ck===k))}
+
+/* ---------- panel ---------- */
+async function vPanel(){
+  const [st,info]=await Promise.all([api('stats'),api('info')]);st.apr=info.examen.puntos_aprobado;S.st=st;S.info=info;
+  $('#foot').textContent=`${info.total} preguntas en el banco`;
+  const ult=st.sesiones.slice(-5).reverse();
+  const reforzar=st.por_tema.filter(t=>t.ac+t.fa>=3).sort((a,b)=>a.pct-b.pct).slice(0,5);
+  return`<h1>Panel</h1><p class="sub">Tu progreso de un vistazo.</p>
+  <div class="grid g4">
+   ${kpi('Tests realizados',st.sesiones.length,st.sesiones.length?'último: '+fecha(st.sesiones.at(-1).fecha):'todavía ninguno')}
+   ${kpi('% de acierto',st.pct_global==null?'–':`<span class="${cl(st.pct_global)}">${st.pct_global}%</span>`,'media de todos los intentos')}
+   ${kpi('Nota media',st.nota_media5==null?'–':st.nota_media5,`últimos 5 · aprobado ${info.examen.puntos_aprobado}/${info.examen.puntos_maximos}`)}
+   ${kpi('Racha',st.racha+(st.racha===1?' día':' días'),'días seguidos estudiando')}
+   ${kpi('Preguntas falladas',st.falladas,`${st.dominadas} dominadas`)}
+  </div>
+  <div class="grid g2 mt">
+   <div class="card"><div class="row"><h2 style="margin:0">Evolución por intento</h2><span class="sp"></span>
+     <div class="seg"><button data-ck="pct" class="${S.ck==='pct'?'on':''}" onclick="setCk('pct')">% acierto</button><button data-ck="nota" class="${S.ck==='nota'?'on':''}" onclick="setCk('nota')">Nota</button></div></div>
+     <div id="chart" class="mt">${chart(st.sesiones,S.ck,st.apr)}</div></div>
+   <div class="card"><h2>Por bloque</h2>${st.por_bloque.map(b=>`<div style="margin-bottom:14px"><div class="row"><b>${esc(b.nombre)}</b><span class="sp"></span><span class="${cl(b.pct)}"><b>${b.pct==null?'–':b.pct+'%'}</b></span></div>${bar(b.pct,b.pct==null?'':undefined)}<div class="ks" style="color:var(--mut);font-size:12px">${b.vistas}/${b.n} preguntas vistas</div></div>`).join('')}</div>
+  </div>
+  <div class="grid g2 mt">
+   <div class="card"><h2>Mapa de temas</h2><div class="tiles">${st.por_tema.map(t=>{const c=t.n?(t.pct==null?'has':'has '+cl(t.pct)):'';
+     return`<button class="tile ${c}" ${t.n?`onclick="practicar('${t.tema}')"`:'disabled'} title="${t.tema} · ${t.n} preguntas${t.pct==null?'':' · '+t.pct+'% acierto'}">${+t.tema.slice(-2)}</button>`}).join('')}</div>
+     <div class="legend"><span><b style="background:var(--goodbg);border:1px solid var(--good)"></b>≥70 %</span><span><b style="background:var(--midbg);border:1px solid var(--mid)"></b>50–69 %</span><span><b style="background:var(--badbg);border:1px solid var(--bad)"></b>&lt;50 %</span><span><b style="background:var(--bg);border:1px solid var(--bd)"></b>sin intentos</span><span><b style="border:1px dashed var(--bd)"></b>sin preguntas</span></div></div>
+   <div class="card"><h2>Temas a reforzar</h2>${reforzar.length?reforzar.map(t=>`<div class="row" style="margin-bottom:10px"><b style="width:64px">${t.tema}</b><div style="flex:1">${bar(t.pct)}</div><b class="${cl(t.pct)}" style="width:44px;text-align:right">${t.pct}%</b><button class="btn" style="padding:3px 10px" onclick="practicar('${t.tema}')">Practicar</button></div>`).join(''):'<div class="empty">Cuando respondas al menos 3 preguntas de un tema aparecerán aquí los más flojos.</div>'}</div>
+  </div>
+  <div class="card mt"><h2>Últimos intentos</h2>${ult.length?tablaSes(ult):'<div class="empty">Sin intentos todavía.</div>'}</div>`;
+}
+function practicar(t){S.nt.tipo='temas';S.nt.sel=new Set([t]);go('nuevo')}
+
+/* ---------- nuevo test ---------- */
+async function vNuevo(){
+  const info=await api('info');S.info=info;const nt=S.nt;$('#foot').textContent=`${info.total} preguntas en el banco`;
+  const tipos=[['temas','Por temas','Elige temas o bloques'],['aleatorio','Aleatorio','Todo el banco, priorizando fallos'],['simulacro','Simulacro oficial',`${Object.values(info.bloques).reduce((a,b)=>a+b.preguntas_examen,0)} preguntas · ${info.examen.minutos} min · penaliza`],['falladas','Mis falladas',`${info.falladas} pendientes`]];
+  const con=info.temas.filter(t=>t.n);
+  const pool=nt.tipo==='temas'?con.filter(t=>nt.sel.has(t.t)).reduce((a,t)=>a+t.n,0):nt.tipo==='aleatorio'?info.total:nt.tipo==='falladas'?info.falladas:null;
+  const nn=nt.tipo==='simulacro'?null:Math.min(nt.n||pool,pool);
+  const ok=nt.tipo==='simulacro'?info.total>0:pool>0;
+  return`<h1>Nuevo test</h1><p class="sub">Configura tu sesión y empieza.</p>
+  <div class="card">
+   <div class="opt-type">${tipos.map(([k,a,b])=>`<button class="type ${nt.tipo===k?'on':''}" ${k==='falladas'&&!info.falladas?'disabled':''} onclick="S.nt.tipo='${k}';render()"><b>${a}</b><span>${b}</span></button>`).join('')}</div>
+   ${nt.tipo==='temas'?`<label class="lb">Bloques</label><div class="row">${Object.entries(info.bloques).map(([k,b])=>{const ts=con.filter(t=>t.bloque===k);const on=ts.length&&ts.every(t=>nt.sel.has(t.t));
+      return`<button class="chip ${on?'on':''}" ${ts.length?'':'disabled'} onclick="selBloque('${k}')">${esc(b.nombre)} <small>${b.n}</small></button>`}).join('')}
+      <button class="chip" onclick="S.nt.sel=new Set();render()">Limpiar</button></div>
+     <label class="lb">Temas con preguntas</label><div class="row">${con.length?con.map(t=>`<button class="chip ${nt.sel.has(t.t)?'on':''}" onclick="selTema('${t.t}')">${t.t} <small>${t.n}</small></button>`).join(''):'<span class="bad">No hay preguntas en la carpeta banco/.</span>'}</div>`:''}
+   ${nt.tipo!=='simulacro'?`<label class="lb">Modo</label><div class="seg"><button class="${nt.modo==='estudio'?'on':''}" onclick="S.nt.modo='estudio';render()">Estudio · feedback al instante</button><button class="${nt.modo==='examen'?'on':''}" onclick="S.nt.modo='examen';render()">Examen · corrige al final</button></div>
+    <label class="lb">Número de preguntas</label><div class="row">${[10,20,40,0].map(n=>`<button class="chip ${nt.n===n?'on':''}" onclick="S.nt.n=${n};render()">${n||'Todas'}</button>`).join('')}
+     <input type="number" min="1" placeholder="otro" onchange="S.nt.n=+this.value||20;render()"></div>`:
+    `<p class="sub mt">Reparto oficial por bloques, con límite de tiempo y penalización de ${(info.examen.penalizacion_por_error).toFixed(2)} por error. Las respuestas se corrigen al terminar.</p>`}
+   <div class="row" style="margin-top:28px"><button class="btn pri big" ${ok?'':'disabled'} onclick="empezar()">Empezar${nn?` · ${nn} preguntas`:''}</button>
+    ${nt.tipo==='temas'&&!nt.sel.size?'<span style="color:var(--mut)">Selecciona al menos un tema</span>':''}</div>
+  </div>`;
+}
+function selTema(t){const s=S.nt.sel;s.has(t)?s.delete(t):s.add(t);render()}
+function selBloque(b){const ts=S.info.temas.filter(t=>t.bloque===b&&t.n),s=S.nt.sel;const all=ts.every(t=>s.has(t.t));ts.forEach(t=>all?s.delete(t.t):s.add(t.t));render()}
+async function empezar(){
+  const nt=S.nt;
+  try{const r=await api('start',{tipo:nt.tipo,modo:nt.modo,n:nt.n,seleccion:[...nt.sel]});
+    S.q={...r,i:0,resp:Array(r.qs.length).fill(null),fb:{},t0:Date.now()};go('quiz')}catch(e){toast(e.message)}
+}
+
+/* ---------- test en curso ---------- */
+let timer=null;
+function stopTimer(){clearInterval(timer);timer=null}
+function tick(){
+  stopTimer();const q=S.q;if(!q)return;
+  const f=()=>{const el=$('#timer');if(!el)return;const t=(Date.now()-q.t0)/1000;
+    if(q.limite){const r=q.limite-t;el.textContent='⏱ '+fmt(r);el.classList.toggle('warn',r<600);if(r<=0){stopTimer();toast('Se acabó el tiempo');terminar(true)}}
+    else el.textContent='⏱ '+fmt(t)};
+  f();timer=setInterval(f,1000);
+}
+function vQuiz(){
+  const q=S.q,p=q.qs[q.i],m=q.resp[q.i],fb=q.fb[q.i],est=q.modo==='estudio',hecho=q.resp.filter(x=>x!=null).length;
+  const cls=j=>{if(est&&fb)return j===fb.cor?'ok':j===m?'ko':'dim';return j===m?'sel':''};
+  return`<div class="qtop"><b>${esc(q.titulo)}</b><div class="bar"><i style="width:${100*hecho/q.qs.length}%"></i></div><span class="badge">${hecho}/${q.qs.length}</span><span class="timer" id="timer"></span></div>
+  <div class="qlayout"><div class="card">
+    <div class="row"><span class="badge">Pregunta ${q.i+1} de ${q.qs.length}</span><span class="badge">${p.tema}</span>${p.pagina?`<span class="badge">pág. ${p.pagina}</span>`:''}</div>
+    <div class="qtext">${esc(p.enunciado)}</div>
+    ${p.ops.map((o,j)=>`<button class="opt ${cls(j)}" ${est&&fb?'disabled':''} onclick="elegir(${j})"><span class="l">${L[j]}</span><span>${esc(o)}</span></button>`).join('')}
+    ${est&&fb&&fb.explicacion?`<div class="expl">💡 ${esc(fb.explicacion)}</div>`:''}
+    <div class="row" style="margin-top:20px"><button class="btn" ${q.i?'':'disabled'} onclick="ir(${q.i-1})">← Anterior</button>
+     ${!est&&m!=null?'<button class="btn" onclick="elegir('+m+')">Borrar respuesta</button>':''}<span class="sp"></span>
+     ${q.i<q.qs.length-1?`<button class="btn pri" onclick="ir(${q.i+1})">Siguiente →</button>`:`<button class="btn pri" onclick="terminar()">Terminar y corregir</button>`}</div>
+  </div>
+  <div class="card"><h2>Preguntas</h2><div class="navgrid">${q.qs.map((_,k)=>{const f=q.fb[k];let c=q.resp[k]!=null?(est&&f?(q.resp[k]===f.cor?'ok':'ko'):'ans'):'';
+     return`<button class="${c} ${k===q.i?'cur':''}" onclick="ir(${k})">${k+1}</button>`}).join('')}</div>
+   <button class="btn" style="width:100%;margin-top:16px" onclick="terminar()">Terminar y corregir</button>
+   <button class="btn" style="width:100%;margin-top:8px" onclick="go('panel')">Abandonar</button>
+   <div class="kbd"><kbd>A</kbd>–<kbd>D</kbd> responder · <kbd>←</kbd><kbd>→</kbd> moverse${est?'':' · <kbd>0</kbd> borrar'}</div></div></div>`;
+}
+function ir(k){const q=S.q;if(k<0||k>=q.qs.length)return;q.i=k;$('#main').innerHTML=vQuiz();tick()}
+async function elegir(j){
+  const q=S.q,i=q.i;if(!q)return;
+  if(q.modo==='estudio'){if(q.fb[i])return;q.resp[i]=j;q.fb[i]=await api('answer',{sid:q.sid,i,marca:j})}
+  else q.resp[i]=q.resp[i]===j?null:j;
+  if(S.q===q){$('#main').innerHTML=vQuiz();tick()}
+}
+async function terminar(auto){
+  const q=S.q;if(!q)return;let n=q.qs.length;
+  if(q.modo==='estudio'){n=q.resp.findLastIndex(x=>x!=null)+1;if(!n){toast('Aún no has respondido ninguna pregunta');return}}
+  else if(!auto){const b=q.resp.filter(x=>x==null).length;if(!confirm(b?`Tienes ${b} preguntas en blanco. ¿Terminar y corregir?`:'¿Terminar y corregir?'))return}
+  stopTimer();
+  try{S.res=await api('finish',{sid:q.sid,respuestas:q.resp.slice(0,n)});S.q=null;S.rf=S.res.detalle.some(d=>d.marca!=null&&d.marca!==d.cor)?'ko':'all';go('res')}
+  catch(e){toast(e.message);tick()}
+}
+addEventListener('keydown',e=>{
+  if(S.view!=='quiz'||!S.q||e.ctrlKey||e.metaKey||e.target.tagName==='INPUT')return;
+  const k=e.key.toLowerCase(),i='abcd1234'.indexOf(k);
+  if(i>=0)elegir(i%4);else if(k==='arrowright'||k==='enter')ir(S.q.i+1);else if(k==='arrowleft')ir(S.q.i-1);
+  else if(k==='0'&&S.q.modo==='examen'&&S.q.resp[S.q.i]!=null)elegir(S.q.resp[S.q.i]);
+});
+
+/* ---------- resultados / detalle ---------- */
+function vRes(r,recien){
+  const s=r.sesion,ex=S.info?.examen||{puntos_maximos:20,puntos_aprobado:10};
+  const por={};r.detalle.forEach(d=>{const t=por[d.tema]??={ac:0,er:0,bl:0};d.marca==null?t.bl++:d.marca===d.cor?t.ac++:t.er++});
+  return`<h1>${recien?'Resultado':'Detalle del intento'}</h1><p class="sub">${esc(s.tipo)} · ${fecha(s.fecha)}${s.minutos!=null?' · '+s.minutos+' min':''}</p>
+  <div class="card"><div class="hero"><div><div class="score ${s.apto?'good':'bad'}">${s.nota}<small> / ${ex.puntos_maximos}</small></div><span class="tag ${s.apto?'good':'bad'}">${s.apto?'APTO':'NO APTO'}</span></div>
+   <div class="grid g4" style="flex:1;min-width:280px">${kpi('Aciertos',`<span class="good">${s.aciertos}</span>`,s.pct+' % del total')}${kpi('Errores',`<span class="bad">${s.errores}</span>`,'')}${kpi('En blanco',s.blancos,'')}</div></div></div>
+  ${Object.keys(por).length>1?`<div class="card mt"><h2>Por tema</h2>${Object.entries(por).sort().map(([t,d])=>{const n=d.ac+d.er+d.bl,p=Math.round(100*d.ac/n);return`<div class="row" style="margin-bottom:8px"><b style="width:70px">${t}</b><div style="flex:1">${bar(p)}</div><span style="width:150px;text-align:right;color:var(--mut)">${d.ac} ✓ · ${d.er} ✗ · ${d.bl} –</span></div>`}).join('')}</div>`:''}
+  <div class="row mt"><h2 style="margin:0">Revisión</h2><span class="sp"></span><div class="row" id="rf"></div></div><div id="rev" class="mt"></div>
+  <div class="row mt"><button class="btn pri" onclick="go('nuevo')">Nuevo test</button><button class="btn" onclick="go('panel')">Ir al panel</button><button class="btn" onclick="go('hist')">Historial</button></div>`;
+}
+const estado=d=>d.marca==null?'bl':d.marca===d.cor?'ok':'ko';
+function renderRev(){
+  const det=S.res.detalle,f=S.rf;
+  const cnt={all:det.length,ko:det.filter(d=>estado(d)==='ko').length,bl:det.filter(d=>estado(d)==='bl').length,ok:det.filter(d=>estado(d)==='ok').length};
+  if(!det.length){$('#rev').innerHTML='<div class="empty card">Este intento viene del historial antiguo (sin detalle de preguntas).</div>';return}
+  $('#rf').innerHTML=[['all','Todas'],['ko','Errores'],['bl','En blanco'],['ok','Aciertos']].map(([k,t])=>`<button class="chip ${f===k?'on':''}" onclick="S.rf='${k}';renderRev()">${t} <small>${cnt[k]}</small></button>`).join('');
+  $('#rev').innerHTML=det.map((d,i)=>({d,i})).filter(({d})=>f==='all'||estado(d)===f).map(({d,i})=>`<div class="rev ${estado(d)}">
+   <div class="row"><span class="badge">#${i+1}</span><span class="badge">${d.tema}${d.pagina?' · pág. '+d.pagina:''}</span></div>
+   <div style="font-weight:600;margin:8px 0">${esc(d.enunciado)}</div>
+   ${d.ops.map((o,j)=>`<div class="o ${j===d.cor?'c':j===d.marca?'w':''}">${L[j]}) ${esc(o)}${j===d.cor?' ✓':j===d.marca?' ✗ tu respuesta':''}</div>`).join('')}
+   ${d.marca==null?'<div style="color:var(--mid);margin-top:6px;font-size:13px">Sin responder</div>':''}
+   ${d.expl?`<div class="expl" style="margin-top:10px">💡 ${esc(d.expl)}</div>`:''}</div>`).join('')||'<div class="empty">Nada que mostrar con este filtro.</div>';
+}
+
+/* ---------- historial ---------- */
+function tablaSes(ses){
+  return`<table><thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Preguntas</th><th class="num">✓</th><th class="num">✗</th><th class="num">–</th><th style="width:130px">% acierto</th><th class="num">Nota</th><th class="num">Tiempo</th></tr></thead><tbody>
+  ${ses.map(s=>`<tr class="click" onclick="go('det',${s.i})"><td>${fecha(s.fecha)}</td><td>${esc(s.tipo)}</td><td class="num">${s.n}</td><td class="num good">${s.aciertos}</td><td class="num bad">${s.errores}</td><td class="num">${s.blancos}</td>
+   <td><div class="row" style="flex-wrap:nowrap"><div style="flex:1">${bar(s.pct)}</div><b class="${cl(s.pct)}">${Math.round(s.pct)}%</b></div></td><td class="num"><span class="badge ${s.apto?'good':'bad'}">${s.nota}</span></td><td class="num">${s.minutos??'–'} min</td></tr>`).join('')}</tbody></table>`;
+}
+let hf='all';
+async function vHist(){
+  const all=(await api('sesiones')).reverse();window._h=all;
+  return`<h1>Historial</h1><p class="sub">Todos tus intentos. Pulsa uno para revisar pregunta a pregunta.</p>
+  <div class="row" style="margin-bottom:14px">${[['all','Todos'],['sim','Simulacros'],['otros','Resto']].map(([k,t])=>`<button class="chip ${hf===k?'on':''}" onclick="hf='${k}';go('hist')">${t}</button>`).join('')}</div>
+  <div class="card">${(()=>{const l=all.filter(s=>hf==='all'||(hf==='sim')===/simulacro/i.test(s.tipo));return l.length?tablaSes(l):'<div class="empty">No hay intentos todavía.</div>'})()}</div>`;
+}
+
+/* ---------- banco ---------- */
+async function vBanco(){
+  const [info,st]=await Promise.all([api('info'),api('stats')]);$('#foot').textContent=`${info.total} preguntas en el banco`;
+  return`<h1>Banco de preguntas</h1><p class="sub">${info.total} preguntas válidas importadas. Para añadir o actualizar ficheros .json usa «Sincronizar».</p>
+  <div class="grid g4">${Object.entries(info.bloques).map(([k,b])=>{const p=Math.min(100,Math.round(100*b.n/b.preguntas_examen));
+    return`<div class="card kpi"><div class="kl">${esc(b.nombre)}</div><div class="kv">${b.n}</div><div class="ks">${b.temas}</div><div style="margin:8px 0 4px">${bar(p,'')}</div><div class="ks">${b.n<b.preguntas_examen?`faltan ≥${b.preguntas_examen-b.n} para el simulacro`:'cubre el simulacro'}</div></div>`}).join('')}</div>
+  <div class="card mt"><h2>Temas</h2><div class="tiles">${info.temas.map(t=>`<button class="tile ${t.n?'has':''}" ${t.n?`onclick="practicar('${t.t}')"`:'disabled'} title="${t.t}: ${t.n} preguntas">${+t.t.slice(-2)}</button>`).join('')}</div>
+   <div class="legend"><span>Cada casilla es un tema; pulsa uno con preguntas para practicarlo.</span></div></div>
+  <div class="card mt"><h2>Validación</h2>${info.avisos.length?`<p class="bad">${info.avisos.length} problema(s):</p><ul>${info.avisos.slice(0,50).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:'<p class="good">✓ Todo el banco es correcto.</p>'}</div>`;
+}
+
+QZ.ready.then(()=>go(QZ.vacio()?'sync':'panel'));
+</script>
+</body>
+</html>
