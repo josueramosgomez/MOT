@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Quiz Topografía</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#1b2a3a">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#eef2f4;--fg:#1b2a3a;--card:#fff;--ln:#cfd8de;--ac:#1f6fb2;--ok:#2e7d4f;--ko:#b3372f;--mu:#5d6d7a;color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root{--bg:#121a22;--fg:#e4ebf0;--card:#1b2630;--ln:#2e3b47;--ac:#5aa6e0;--ok:#5cc08a;--ko:#e5766d;--mu:#93a3b0}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{background:#1b2a3a repeating-radial-gradient(circle at 85% 120%,transparent 0 14px,#ffffff10 14px 15px);color:#fff;padding:12px 14px 0;position:sticky;top:0;z-index:5}
+header h1{font:600 20px Georgia,serif;margin:0 0 8px}nav{display:flex;gap:4px}
+nav button{flex:1;background:none;border:0;color:#cfe0ee;padding:9px 4px;font:inherit;border-bottom:3px solid transparent}nav button.on{color:#fff;border-color:#6cb4f0}
+main{max-width:760px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:12px 14px;margin:0 0 10px}.card.wr{border-left:4px solid var(--ko)}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:10px 14px;cursor:pointer}button.pri{background:var(--ac);border-color:var(--ac);color:#fff}button:disabled{opacity:.55}
+.op{display:block;width:100%;text-align:left;margin:6px 0}.op b{display:inline-block;width:1.6em}.op.sel{border-color:var(--ac);box-shadow:inset 0 0 0 1px var(--ac)}
+.op.ok,.r.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--card))}.op.ko,.r.ko{border-color:var(--ko);background:color-mix(in srgb,var(--ko) 18%,var(--card))}
+.r{padding:4px 8px;border:1px solid transparent;border-radius:6px}
+.ex{margin-top:8px;padding:8px 10px;border-left:3px solid var(--ac);background:color-mix(in srgb,var(--ac) 10%,var(--card));font-size:15px}
+.bar,.nav,.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.bar{justify-content:space-between;margin-bottom:8px}.nav button{flex:1}
+.en{font-size:18px;margin:6px 0 10px}small,.mu{color:var(--mu)}.big{font:600 30px Georgia,serif;margin:4px 0}.okt{color:var(--ok)}.kot{color:var(--ko)}
+.st{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:10px}.st div{background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:8px 10px}.st b{display:block;font:600 22px Georgia,serif}
+details{border-top:1px solid var(--ln);padding:6px 0}summary{cursor:pointer;padding:4px 0}.tm{display:block;padding:5px 0 5px 12px}
+input,select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px}input[type=text]{width:100%}input[type=checkbox]{width:18px;height:18px;vertical-align:-3px}
+.h{width:100%;text-align:left;margin-bottom:6px}.msg{white-space:pre-wrap;font-size:14px}.warn{color:var(--ko);font-size:14px}
+</style></head><body>
+<header><h1>Quiz Topografía</h1><nav><button id=n-inicio onclick="ir('inicio')">Inicio</button><button id=n-hist onclick="ir('hist')">Historial</button><button id=n-sync onclick="ir('sync')">Sincronizar</button></nav></header>
+<main id=v></main>
+<script>
+const $=s=>document.querySelector(s),LET='ABCD',S={},esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let Q=null,tok=null;
+const CFG0={bloques:{COM:{nombre:"Materias comunes",temas:"COM-01..COM-12",preguntas_examen:25},A:{nombre:"A) Administración geográfica",temas:"ESP-01..ESP-06",preguntas_examen:6},B:{nombre:"B) Geodesia y Geofísica",temas:"ESP-07..ESP-29",preguntas_examen:23},C:{nombre:"C) Geoinformación / Observación y Topografía",temas:"ESP-30..ESP-51",preguntas_examen:23},D:{nombre:"D) Cartografía y TIG",temas:"ESP-52..ESP-74",preguntas_examen:23}},examen:{opciones:4,penalizacion_por_error:0.3333333,puntos_maximos:20,puntos_aprobado:10,minutos:180}};
+// ---- almacenamiento local (IndexedDB)
+const DB=new Promise((ok,ko)=>{const r=indexedDB.open('quiz',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=ko});
+const kget=async k=>{const d=await DB;return new Promise(ok=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result)})};
+const kset=async(k,v)=>{const d=await DB;return new Promise(ok=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok})};
+const guardar=()=>Promise.all(['set','banco','config','mine','otros','dirty'].map(k=>kset(k,S[k])));
+// ---- utilidades (mismas reglas que app.py)
+const norm=t=>String(t).normalize('NFKD').replace(/[^\x00-\x7f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const codTema=t=>{t=String(t).trim().toUpperCase().replace(/_/g,'-').replace(/ /g,'-');const m=t.match(/^(COM|ESP)?-?(\d{1,2})$/);return m?`${m[1]||'ESP'}-${String(+m[2]).padStart(2,'0')}`:t};
+const rango=txt=>{const[a,b]=txt.split('..').map(codTema),p=a.split('-')[0],r=[];for(let n=+a.slice(-2);n<=+b.slice(-2);n++)r.push(`${p}-${String(n).padStart(2,'0')}`);return r};
+const normC=c=>{if(Number.isInteger(c)&&c>=1&&c<=4)return c-1;c=String(c).trim().toUpperCase();if(c&&LET.includes(c))return LET.indexOf(c);if(c&&'1234'.includes(c))return +c-1;throw new Error('correcta debe ser A-D')};
+const idP=async(t,e)=>t+'-'+[...new Uint8Array(await crypto.subtle.digest('SHA-1',new TextEncoder().encode(norm(e))))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,8);
+async function recargar(){const pr=[],av=[],vistas={},mapa={};
+ for(const[b,d]of Object.entries(S.config.bloques))for(const t of rango(d.temas))mapa[t]=b;
+ for(const[f,txt]of Object.entries(S.banco)){let datos;try{datos=JSON.parse(txt)}catch(e){av.push(f+': JSON no válido');continue}
+  let def={},lista=datos;if(!Array.isArray(datos)){def={...datos};delete def.preguntas;lista=datos.preguntas||[]}
+  for(const[n,p0]of lista.entries()){const p={...def,...p0};if(p.activa===false)continue;
+   try{const tema=codTema(p.tema),ops=p.opciones;
+    if(!ops||ops.length!=4||new Set(ops.map(o=>String(o).trim().toLowerCase().replace(/\s+/g,' '))).size!=4)throw new Error('necesita 4 opciones distintas');
+    if(!String(p.enunciado||'').trim())throw new Error('enunciado vacío');
+    const cor=normC(p.correcta);if(!mapa[tema])throw new Error('tema desconocido '+tema);
+    const id=p.id||await idP(tema,p.enunciado);if(vistas[id])throw new Error('duplicada');vistas[id]=1;
+    pr.push({id,tema,bloque:mapa[tema],pagina:p.pagina,enunciado:String(p.enunciado).trim(),opciones:ops.map(o=>String(o).trim()),correcta:cor,explicacion:p.explicacion||''})
+   }catch(e){av.push(`${f} #${n+1}: ${e.message}`)}}}
+ S.pregs=pr;S.avisos=av;S.mapa=mapa}
+// ---- historial: unión de los ficheros de todos los dispositivos
+const hists=()=>[S.mine,...Object.values(S.otros)];
+function sesionesTodas(){const m=new Map();hists().forEach(h=>(h.sesiones||[]).forEach(s=>m.set(s.id||s.fecha+'|'+s.tipo,s)));return[...m.values()].sort((a,b)=>a.fecha<b.fecha?-1:1)}
+function histPreg(){const h={};hists().forEach(x=>{for(const[id,v]of Object.entries(x.base||{}))if(!h[id]||v.aciertos+v.fallos>h[id].aciertos+h[id].fallos)h[id]={...v}});
+ const det={};for(const s of sesionesTodas())for(const d of s.detalle||[]){if(d.marca==null)continue;const x=det[d.id]??={aciertos:0,fallos:0,ultimo:null};if(d.marca===d.cor){x.aciertos++;x.ultimo='acierto'}else{x.fallos++;x.ultimo='fallo'}}
+ return{...h,...det}}
+// ---- selección y test
+function elegir(pool,n,h){const sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+ if(n>=pool.length)return sh([...pool]);const w=p=>{const x=h[p.id];return !x?2:x.ultimo=='fallo'?3:x.ultimo=='acierto'?.7:1.5},rest=[...pool],res=[];
+ while(res.length<n&&rest.length){let r=Math.random()*rest.reduce((s,p)=>s+w(p),0),i=0;for(;i<rest.length-1;i++){r-=w(rest[i]);if(r<=0)break}res.push(rest.splice(i,1)[0])}return res}
+const prep=p=>{const o=[0,1,2,3].sort(()=>Math.random()-.5);return{...p,ops:o.map(i=>p.opciones[i]),cor:o.indexOf(p.correcta)}};
+function go(tipo){const opt={modo:$('#modo').value,n:+$('#n').value,sel:[...document.querySelectorAll('.tm input:checked')].map(i=>i.value)};
+ const h=histPreg(),cfg=S.config;let modo=opt.modo,titulo,lista=[],limite=null;
+ if(tipo=='simulacro'){modo='examen';titulo='Simulacro oficial';limite=cfg.examen.minutos*60;for(const[b,d]of Object.entries(cfg.bloques))lista.push(...elegir(S.pregs.filter(p=>p.bloque==b),d.preguntas_examen,h))}
+ else{let pool;if(tipo=='aleatorio'){pool=S.pregs;titulo='Aleatorias'}else if(tipo=='falladas'){pool=S.pregs.filter(p=>h[p.id]?.ultimo=='fallo');titulo='Falladas'}
+  else{const sel=new Set(opt.sel);pool=S.pregs.filter(p=>sel.has(p.tema));titulo=sel.size<=3?'Tema '+[...sel].sort().join(', '):sel.size+' temas'}
+  lista=elegir(pool,opt.n>0?opt.n:pool.length,h)}
+ if(!lista.length)return alert('No hay preguntas para esa selección.');
+ Q={titulo,modo,limite,qs:lista.map(prep),i:0,resp:lista.map(()=>null),t0:Date.now()};if(limite)Q.timer=setInterval(tick,1000);vistaQuiz()}
+function tick(){if(!Q?.limite)return;const r=Math.max(0,Q.limite-Math.floor((Date.now()-Q.t0)/1e3)),e=$('#cr');if(e)e.textContent=`⏱ ${Math.floor(r/60)}:${String(r%60).padStart(2,'0')}`;if(!r)terminar()}
+function vistaQuiz(){const q=Q.qs[Q.i],est=Q.modo=='estudio',m=Q.resp[Q.i],rev=est&&m!=null,ult=Q.i==Q.qs.length-1;
+ $('#v').innerHTML=`<div class=bar><b>${esc(Q.titulo)}</b><span>${Q.i+1}/${Q.qs.length}</span><span id=cr></span></div>
+ <div class=card><small>${q.tema}${q.pagina?' · pág. '+esc(q.pagina):''}</small><p class=en>${esc(q.enunciado)}</p>
+ ${q.ops.map((o,k)=>`<button class="op ${rev?(k==q.cor?'ok':k==m?'ko':''):(m==k?'sel':'')}" onclick="resp(${k})" ${rev?'disabled':''}><b>${LET[k]}</b>${esc(o)}</button>`).join('')}
+ ${rev&&q.explicacion?`<div class=ex>${esc(q.explicacion)}</div>`:''}</div>
+ <div class=nav>${est?'':`<button onclick="mover(-1)" ${Q.i?'':'disabled'}>◀</button>`}<button onclick="${est?'mover(1)':'blanco()'}">${est?'Saltar':'En blanco'}</button><button class=pri onclick="${ult?'terminar()':'mover(1)'}">${ult?'Terminar':'Siguiente ▶'}</button></div>
+ ${est||ult?'':'<p><button class=h onclick="confirm(\'¿Terminar el test?\')&&terminar()">Terminar ahora</button></p>'}`;tick()}
+function resp(k){Q.resp[Q.i]=Q.modo!='estudio'&&Q.resp[Q.i]==k?null:k;vistaQuiz()}
+function blanco(){Q.resp[Q.i]=null;mover(1)}
+function mover(d){const i=Q.i+d;if(i>=0&&i<Q.qs.length){Q.i=i;vistaQuiz()}else if(i>=Q.qs.length)terminar()}
+async function terminar(){clearInterval(Q.timer);const ex=S.config.examen,rs=Q.qs.map((p,i)=>[p,Q.resp[i]]);
+ const ac=rs.filter(([p,m])=>m!=null&&m==p.cor).length,er=rs.filter(([p,m])=>m!=null&&m!=p.cor).length,bl=rs.length-ac-er;
+ const nota=+(Math.max(0,ac-er*ex.penalizacion_por_error)*ex.puntos_maximos/(rs.length||1)).toFixed(2);
+ const ses={id:crypto.randomUUID(),fecha:new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,19),tipo:Q.titulo,modo:Q.modo,aciertos:ac,errores:er,blancos:bl,nota,minutos:+((Date.now()-Q.t0)/6e4).toFixed(1),
+  detalle:rs.map(([p,m])=>({id:p.id,tema:p.tema,pagina:p.pagina,enunciado:p.enunciado,ops:p.ops,cor:p.cor,marca:m,expl:p.explicacion}))};
+ S.mine.sesiones.push(ses);Q=null;await guardar();$('#v').innerHTML=resumen(ses)+detalle(ses);scrollTo(0,0);if(tok)sync().catch(()=>{})}
+// ---- vistas
+const resumen=s=>{const n=s.aciertos+s.errores+s.blancos,ap=s.nota>=S.config.examen.puntos_aprobado;return`<div class=card><b>${esc(s.tipo)}</b> <small>${s.fecha.replace('T',' ')}</small><p class=big>${s.nota}/${S.config.examen.puntos_maximos} <small class="${ap?'okt':'kot'}">${ap?'APTO':'NO APTO'}</small></p><div>✔ ${s.aciertos} &nbsp; ✘ ${s.errores} &nbsp; ○ ${s.blancos} &nbsp; ${n?Math.round(100*s.aciertos/n):0}% &nbsp; ${s.minutos??'?'} min</div></div>`};
+const detalle=s=>(s.detalle||[]).map(d=>`<div class="card ${d.marca==d.cor?'':'wr'}"><small>${d.tema}${d.pagina?' · pág. '+esc(d.pagina):''}</small><p>${esc(d.enunciado)}</p>${d.ops.map((o,k)=>`<div class="r ${k==d.cor?'ok':k==d.marca?'ko':''}">${LET[k]}) ${esc(o)}</div>`).join('')}${d.expl?`<div class=ex>${esc(d.expl)}</div>`:''}</div>`).join('')||'<p class=mu>Este intento no guardó el detalle.</p>';
+function ir(v){if(Q&&!confirm('¿Abandonar el test en curso?'))return;if(Q)clearInterval(Q.timer);Q=null;['inicio','hist','sync'].forEach(x=>$('#n-'+x).classList.toggle('on',x==v));({inicio:vInicio,hist:vHist,sync:vSync})[v]()}
+function vInicio(){if(!S.pregs.length){$('#v').innerHTML='<div class=card><b>Aún no hay preguntas.</b><p>Abre «Sincronizar» para importar tus archivos del banco o descargarlos de Google Drive.</p></div>';return}
+ const h=histPreg(),ses=sesionesTodas(),nf=S.pregs.filter(p=>h[p.id]?.ultimo=='fallo').length,f=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10),dias=new Set(ses.map(s=>s.fecha.slice(0,10)));
+ let racha=0,d=new Date();if(!dias.has(f(d)))d=new Date(d-864e5);while(dias.has(f(d))){racha++;d=new Date(d-864e5)}
+ const tot=ses.reduce((a,s)=>a+s.aciertos+s.errores+s.blancos,0),tac=ses.reduce((a,s)=>a+s.aciertos,0),u=ses.slice(-5).map(s=>s.nota),T={};
+ S.pregs.forEach(p=>{const t=T[p.tema]??={n:0,ac:0,fa:0},x=h[p.id];t.n++;if(x){t.ac+=x.aciertos;t.fa+=x.fallos}});
+ const bl=Object.entries(S.config.bloques).map(([b,d])=>{const ts=Object.keys(S.mapa).filter(t=>S.mapa[t]==b&&T[t]).sort();return`<details><summary>${esc(d.nombre)} <small>${ts.reduce((a,t)=>a+T[t].n,0)} preg.</small></summary>${ts.map(t=>{const x=T[t];return`<label class=tm><input type=checkbox value=${t}> ${t} <small>${x.n} preg. · ${x.ac+x.fa?Math.round(100*x.ac/(x.ac+x.fa))+'% acierto':'sin hacer'}</small></label>`}).join('')||'<small>Sin preguntas</small>'}</details>`}).join('');
+ $('#v').innerHTML=`<div class=st><div><b>${S.pregs.length}</b><small>preguntas</small></div><div><b>${racha}</b><small>días seguidos</small></div><div><b>${tot?Math.round(100*tac/tot)+'%':'–'}</b><small>acierto global</small></div><div><b>${u.length?(u.reduce((a,b)=>a+b,0)/u.length).toFixed(1):'–'}</b><small>nota media (5)</small></div><div><b>${nf}</b><small>falladas</small></div></div>
+ <div class=card><div class=row><select id=modo><option value=estudio>Modo estudio</option><option value=examen>Modo examen</option></select><label>Nº <input id=n type=number value=20 min=0 style="width:70px"></label><small>0 = todas</small></div>
+ <div class=row style="margin-top:10px"><button class=pri onclick="go('simulacro')">Simulacro oficial</button><button onclick="go('aleatorio')">Aleatorias</button><button onclick="go('falladas')" ${nf?'':'disabled'}>Falladas (${nf})</button></div></div>
+ <div class=card><b>Por temas</b>${bl}<p><button onclick="go('temas')">Practicar selección</button></p></div>
+ ${S.avisos.length?`<details class=warn><summary>${S.avisos.length} avisos del banco</summary>${S.avisos.map(esc).join('<br>')}</details>`:''}`}
+function vHist(){const ses=sesionesTodas().reverse();$('#v').innerHTML=ses.length?ses.map((s,i)=>`<button class=h onclick="verSes(${i})"><b>${s.nota}</b>/${S.config.examen.puntos_maximos} · ${esc(s.tipo)}<br><small>${s.fecha.replace('T',' ')} · ✔${s.aciertos} ✘${s.errores} ○${s.blancos}</small></button>`).join(''):'<p class=mu>Todavía no has hecho ningún test.</p>';S.verLista=ses}
+function verSes(i){const s=S.verLista[i];$('#v').innerHTML=`<p><button onclick="vHist()">◀ Volver</button></p>`+resumen(s)+detalle(s)}
+function vSync(){const nb=Object.keys(S.banco).length;$('#v').innerHTML=`<div class=card><b>Google Drive</b><p class=mu>Se guarda en la carpeta «QuizTopografia» de tu Drive. Cada dispositivo escribe solo su propio historial y lee el de los demás, así que nunca se pisan.</p>
+ <p>ID de cliente de Google<br><input type=text id=cid value="${esc(S.set.clientId||'')}" placeholder="xxxx.apps.googleusercontent.com" onchange="S.set.clientId=this.value.trim();guardar()"></p>
+ <button class=pri onclick="doSync()">Conectar y sincronizar</button><p id=sm class=msg></p></div>
+ <div class=card><b>Importar archivos</b><p class=mu>Banco (.json), config.json e historial.json de la versión de Windows. Puedes elegir varios a la vez.</p><input type=file multiple accept=".json,application/json" onchange="importar(this.files)"><p id=im class=msg></p></div>
+ <div class=card><small>Banco local: ${nb} archivos, ${S.pregs.length} preguntas · Intentos: ${sesionesTodas().length} · Dispositivo: ${S.set.dev}</small></div>`}
+async function doSync(){const m=$('#sm');m.textContent='Sincronizando…';try{await sync();m.textContent=`Listo. ${S.pregs.length} preguntas y ${sesionesTodas().length} intentos en total.`}catch(e){m.textContent='Error: '+e.message}}
+async function importar(files){const m=[];for(const f of files){const t=await f.text();let j;try{j=JSON.parse(t)}catch{m.push(f.name+': JSON no válido');continue}
+ if(j&&!Array.isArray(j)&&(Array.isArray(j.sesiones)||(j.preguntas&&!Array.isArray(j.preguntas)))){const ids=new Set(S.mine.sesiones.map(s=>s.id));
+  for(const s of j.sesiones||[]){s.id=s.id||'old-'+s.fecha+'|'+s.tipo;if(!ids.has(s.id)){ids.add(s.id);S.mine.sesiones.push(s)}}
+  for(const[id,v]of Object.entries(j.preguntas||{}))S.mine.base[id]=v;m.push(f.name+': historial importado')}
+ else if(j&&j.bloques&&j.examen){S.config=j;S.dirty['config.json']=1;m.push(f.name+': configuración')}
+ else{S.banco[f.name]=t;S.dirty['banco-'+f.name]=1;m.push(f.name+': banco')}}
+ await recargar();await guardar();$('#im').textContent=m.join('\n')+'\nPulsa «Conectar y sincronizar» para subirlo a Drive.'}
+// ---- Google Drive
+const gsi=()=>window.google?.accounts?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=ok;s.onerror=()=>ko(new Error('Sin conexión'));document.head.appendChild(s)});
+const api=async(u,o={})=>{const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+tok,...(o.headers||{})}});if(!r.ok)throw new Error('Drive '+r.status);return o.raw?r:r.json()};
+const D='https://www.googleapis.com/drive/v3/files';
+async function carpeta(){const r=await api(`${D}?q=${encodeURIComponent("name='QuizTopografia' and mimeType='application/vnd.google-apps.folder' and trashed=false")}&fields=files(id)`);
+ return r.files[0]?.id||(await api(D,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'QuizTopografia',mimeType:'application/vnd.google-apps.folder'})})).id}
+async function subir(fid,name,text,lst){const ex=lst.find(f=>f.name==name),fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,...(ex?{}:{parents:[fid]})})],{type:'application/json'}));fd.append('file',new Blob([text],{type:'application/json'}));
+ await api(`https://www.googleapis.com/upload/drive/v3/files${ex?'/'+ex.id:''}?uploadType=multipart`,{method:ex?'PATCH':'POST',body:fd})}
+async function sync(){if(!tok){if(!S.set.clientId)throw new Error('Falta el ID de cliente de Google');await gsi();
+  await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:S.set.clientId,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(new Error(r.error||'Acceso denegado'))}).requestAccessToken())}
+ try{const fid=await carpeta(),lst=(await api(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files,mio='hist-'+S.set.dev+'.json';
+  for(const f of lst){if(f.name==mio||S.dirty[f.name])continue;const t=await(await api(`${D}/${f.id}?alt=media`,{raw:1})).text();
+   if(f.name.startsWith('banco-'))S.banco[f.name.slice(6)]=t;else if(f.name=='config.json')S.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))S.otros[f.name]=JSON.parse(t)}
+  for(const n of Object.keys(S.dirty))await subir(fid,n,n=='config.json'?JSON.stringify(S.config):S.banco[n.slice(6)],lst);
+  await subir(fid,mio,JSON.stringify(S.mine),lst);S.dirty={};await recargar();await guardar()}
+ catch(e){if(/Drive 401/.test(e.message))tok=null;throw e}}
+// ---- arranque
+(async()=>{S.set=await kget('set')||{dev:Math.random().toString(36).slice(2,8)};S.banco=await kget('banco')||{};S.config=await kget('config')||CFG0;
+ S.mine=await kget('mine')||{dev:S.set.dev,sesiones:[],base:{}};S.otros=await kget('otros')||{};S.dirty=await kget('dirty')||{};
+ await guardar();await recargar();ir('inicio');if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js')})();
+</script></body></html>
