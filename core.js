@@ -15,6 +15,7 @@ const codTema=t=>{t=String(t).trim().toUpperCase().replace(/_/g,'-').replace(/ /
 const rango=txt=>{const[a,b]=txt.split('..').map(codTema),p=a.split('-')[0],r=[];for(let n=+a.slice(-2);n<=+b.slice(-2);n++)r.push(`${p}-${String(n).padStart(2,'0')}`);return r};
 const normC=c=>{if(Number.isInteger(c)&&c>=1&&c<=4)return c-1;c=String(c).trim().toUpperCase();if(c&&LET.includes(c))return LET.indexOf(c);if(c&&'1234'.includes(c))return +c-1;throw Err(`'correcta' debe ser A-D (o 1-4), no ${c}`)};
 const idP=async(t,e)=>t+'-'+[...new Uint8Array(await crypto.subtle.digest('SHA-1',new TextEncoder().encode(norm(e))))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,8);
+const limpia=v=>String(v||'').replace(/\s+/g,'').replace(/^https?:\/\//i,'').replace(/\/+$/,'');
 const cmp=(a,b)=>a<b?-1:a>b?1:0;
 async function recargar(){const pr=[],av=[],vistas={},mapa={};
  for(const[b,d]of Object.entries(Z.config.bloques))for(const t of rango(d.temas))mapa[t]=b;
@@ -87,7 +88,7 @@ async function carpeta(){const r=await dapi(`${D}?q=${encodeURIComponent("name='
 async function subir(fid,name,text,lst){const ex=lst.find(f=>f.name==name),fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,...(ex?{}:{parents:[fid]})})],{type:'application/json'}));fd.append('file',new Blob([text],{type:'application/json'}));
  await dapi(`https://www.googleapis.com/upload/drive/v3/files${ex?'/'+ex.id:''}?uploadType=multipart`,{method:ex?'PATCH':'POST',body:fd})}
 async function sync(){if(!tok){if(!Z.set.clientId)throw Err('Falta el ID de cliente de Google');await gsi();
-  await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:Z.set.clientId,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(Err(r.error||'Acceso denegado'))}).requestAccessToken({prompt:'select_account'}))}
+  await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:limpia(Z.set.clientId),scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(Err(r.error||'Acceso denegado'))}).requestAccessToken({prompt:'select_account'}))}
  try{const fid=await carpeta(),lst=(await dapi(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files,mio='hist-'+Z.set.dev+'.json';
   for(const f of lst){if(f.name==mio||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
    if(f.name.startsWith('banco-'))Z.banco[f.name.slice(6)]=t;else if(f.name=='config.json')Z.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))Z.otros[f.name]=JSON.parse(t)}
@@ -115,8 +116,8 @@ window.vSync=()=>`<h1>Sincronizar</h1><p class="sub">Banco e historial compartid
 <p class="sub" style="margin-bottom:10px">Ficheros del banco (.json), config.json e historial.json de la versión de Windows. Puedes elegir varios a la vez.</p>
 <input type="file" multiple accept=".json,application/json" onchange="QZ.imp(this.files)">
 <p class="sub mt" style="margin-bottom:0">Banco local: ${Object.keys(Z.banco).length} archivos, ${Z.pregs.length} preguntas · Intentos: ${sesionesTodas().length} · Dispositivo: ${Z.set.dev}</p></div></div>`;
-window.QZ={vacio:()=>!Z.pregs.length,cid:v=>{Z.set.clientId=v.trim();guardar();const e=document.getElementById('qzid');if(e)e.textContent=`ID guardado (${Z.set.clientId.length} caracteres): ${Z.set.clientId||'ninguno'}`},
- async sync(){const f=document.getElementById('qzcid');if(f){Z.set.clientId=f.value.replace(/\s+/g,'');await guardar()}const m=document.getElementById('qzm');if(m)m.textContent='Sincronizando…';try{await sync();Z.msg=`Listo: ${Z.pregs.length} preguntas y ${sesionesTodas().length} intentos en total.`}catch(e){Z.msg='Error: '+e.message}window.go('sync')},
+window.QZ={vacio:()=>!Z.pregs.length,cid:v=>{Z.set.clientId=limpia(v);guardar();const e=document.getElementById('qzid');if(e)e.textContent=`ID guardado (${Z.set.clientId.length} caracteres): ${Z.set.clientId||'ninguno'}`},
+ async sync(){const f=document.getElementById('qzcid');if(f){Z.set.clientId=limpia(f.value);f.value=Z.set.clientId;await guardar()}const m=document.getElementById('qzm');if(m)m.textContent='Sincronizando…';try{await sync();Z.msg=`Listo: ${Z.pregs.length} preguntas y ${sesionesTodas().length} intentos en total.`}catch(e){Z.msg='Error: '+e.message}window.go('sync')},
  async imp(files){Z.msg=(await importar(files))+'\nPulsa «Conectar y sincronizar» para subirlo a Drive.';window.go('sync')}};
 // ---------- arranque
 const ready=(async()=>{Z.set=await kget('set')||{dev:Math.random().toString(36).slice(2,8)};Z.banco=await kget('banco')||{};Z.config=await kget('config')||CFG0;
