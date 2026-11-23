@@ -87,7 +87,7 @@ async function carpeta(){const r=await dapi(`${D}?q=${encodeURIComponent("name='
 async function subir(fid,name,text,lst){const ex=lst.find(f=>f.name==name),fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,...(ex?{}:{parents:[fid]})})],{type:'application/json'}));fd.append('file',new Blob([text],{type:'application/json'}));
  await dapi(`https://www.googleapis.com/upload/drive/v3/files${ex?'/'+ex.id:''}?uploadType=multipart`,{method:ex?'PATCH':'POST',body:fd})}
 async function sync(){if(!tok){if(!Z.set.clientId)throw Err('Falta el ID de cliente de Google');await gsi();
-  await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:Z.set.clientId,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(Err(r.error||'Acceso denegado'))}).requestAccessToken())}
+  await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:Z.set.clientId,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(Err(r.error||'Acceso denegado'))}).requestAccessToken({prompt:'select_account'}))}
  try{const fid=await carpeta(),lst=(await dapi(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files,mio='hist-'+Z.set.dev+'.json';
   for(const f of lst){if(f.name==mio||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
    if(f.name.startsWith('banco-'))Z.banco[f.name.slice(6)]=t;else if(f.name=='config.json')Z.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))Z.otros[f.name]=JSON.parse(t)}
