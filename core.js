@@ -107,15 +107,16 @@ window.vSync=()=>`<h1>Sincronizar</h1><p class="sub">Banco e historial compartid
 <div class="grid g2"><div class="card"><h2>Google Drive</h2>
 <p class="sub" style="margin-bottom:10px">Se guarda en la carpeta «QuizTopografia» de tu Drive. Cada dispositivo escribe solo su propio historial y lee el de los demás.</p>
 <div class="kl" style="margin-bottom:4px">ID de cliente de Google</div>
-<input style="${inp}" value="${esc(Z.set.clientId||'')}" placeholder="xxxx.apps.googleusercontent.com" onchange="QZ.cid(this.value)">
+<input id="qzcid" style="${inp}" value="${esc(Z.set.clientId||'')}" placeholder="xxxx.apps.googleusercontent.com" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="QZ.cid(this.value)" onchange="QZ.cid(this.value)">
+<p class="sub" id="qzid" style="margin:6px 0 0;font-size:12px;word-break:break-all">ID guardado (${(Z.set.clientId||'').length} caracteres): ${esc(Z.set.clientId||'ninguno')}</p>
 <div class="row mt"><button class="btn pri" onclick="QZ.sync()">Conectar y sincronizar</button></div>
 <p class="sub mt" id="qzm" style="white-space:pre-wrap;margin-bottom:0">${esc(Z.msg||'')}</p></div>
 <div class="card"><h2>Importar archivos</h2>
 <p class="sub" style="margin-bottom:10px">Ficheros del banco (.json), config.json e historial.json de la versión de Windows. Puedes elegir varios a la vez.</p>
 <input type="file" multiple accept=".json,application/json" onchange="QZ.imp(this.files)">
 <p class="sub mt" style="margin-bottom:0">Banco local: ${Object.keys(Z.banco).length} archivos, ${Z.pregs.length} preguntas · Intentos: ${sesionesTodas().length} · Dispositivo: ${Z.set.dev}</p></div></div>`;
-window.QZ={vacio:()=>!Z.pregs.length,cid:v=>{Z.set.clientId=v.trim();guardar()},
- async sync(){const m=document.getElementById('qzm');if(m)m.textContent='Sincronizando…';try{await sync();Z.msg=`Listo: ${Z.pregs.length} preguntas y ${sesionesTodas().length} intentos en total.`}catch(e){Z.msg='Error: '+e.message}window.go('sync')},
+window.QZ={vacio:()=>!Z.pregs.length,cid:v=>{Z.set.clientId=v.trim();guardar();const e=document.getElementById('qzid');if(e)e.textContent=`ID guardado (${Z.set.clientId.length} caracteres): ${Z.set.clientId||'ninguno'}`},
+ async sync(){const f=document.getElementById('qzcid');if(f){Z.set.clientId=f.value.replace(/\s+/g,'');await guardar()}const m=document.getElementById('qzm');if(m)m.textContent='Sincronizando…';try{await sync();Z.msg=`Listo: ${Z.pregs.length} preguntas y ${sesionesTodas().length} intentos en total.`}catch(e){Z.msg='Error: '+e.message}window.go('sync')},
  async imp(files){Z.msg=(await importar(files))+'\nPulsa «Conectar y sincronizar» para subirlo a Drive.';window.go('sync')}};
 // ---------- arranque
 const ready=(async()=>{Z.set=await kget('set')||{dev:Math.random().toString(36).slice(2,8)};Z.banco=await kget('banco')||{};Z.config=await kget('config')||CFG0;
