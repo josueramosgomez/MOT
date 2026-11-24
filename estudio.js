@@ -95,6 +95,11 @@ p.t{margin:.75em 0;line-height:1.65}
 .foco{position:fixed;right:16px;top:14px;z-index:15;background:#7c3aed;color:#fff;border-radius:999px;padding:6px 14px;font-weight:800;box-shadow:var(--sh);cursor:pointer;font-variant-numeric:tabular-nums}
 .foco.des{background:#16a34a}@media(max-width:980px){.foco{top:auto;bottom:calc(76px + env(safe-area-inset-bottom))}}
 .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:var(--bg);color:var(--mut);margin:0 4px 4px 0}
+.nv{display:inline-block;vertical-align:middle;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:800;margin:0 6px 2px 0;white-space:nowrap;letter-spacing:0;text-transform:none}
+.nv.memoria{background:#f59e0b2e;color:#b45309;border:1px solid #f59e0b88}.nv.reconocer{background:#2563eb1c;color:#1d4ed8;border:1px solid #2563eb66}.nv.idea{background:#64748b1c;color:#475569;border:1px solid #64748b55}
+body.dk .nv.memoria{color:#fcd34d}body.dk .nv.reconocer{color:#93c5fd}body.dk .nv.idea{color:#cbd5e1}
+.fm.memoria{border-color:#f59e0bbb;box-shadow:0 0 0 3px #f59e0b1a}.fm.idea{border-style:dashed;border-color:#64748b66}
+.cl li .nv{margin-top:2px}
 .pill.vi{background:#7c3aed1f;color:#7c3aed}.pill.am{background:#f59e0b22;color:#b45309}.pill.gn{background:var(--goodbg);color:var(--good)}
 `;
 document.head.appendChild(css);
@@ -112,11 +117,19 @@ const marks=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g
 function rt(s){const M=[];s=String(s??'').replace(/\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g,(_,a,b)=>{M.push(mat(a??b,a!=null));return'\u0001'+(M.length-1)+'\u0002'});
  return marks(s).replace(/\u0001(\d+)\u0002/g,(_,i)=>M[i])}
 const cloze=(s,show)=>String(s??'').split(/\{\{(.+?)\}\}/).map((x,i)=>i%2?(show?`<span class=cz2>${rt(x)}</span>`:'<span class=cz>[ … ]</span>'):rt(x)).join('');
+/* ============ niveles de fórmula: ⭐ memoria · 👁 reconocer · 💡 idea ============ */
+const nvN=v=>{v=String(v||'').toLowerCase();return v.includes('⭐')||v.startsWith('mem')?'memoria':v.startsWith('rec')?'reconocer':v.startsWith('idea')?'idea':''};
+const NV={memoria:'⭐ De memoria',reconocer:'👁 Reconocer',idea:'💡 Solo la idea'},NVR={memoria:0,reconocer:1,idea:2,'':1};
+const nvB=v=>{v=nvN(v);return v?`<span class="nv ${v}" title="${v=='memoria'?'Hay que saberla escribir o reconocer al instante':v=='reconocer'?'Basta con saber su forma y comprobarla con un caso límite':'Basta con saber qué hace y de qué depende'}">${NV[v]}</span>`:''};
+const clv=c=>c&&typeof c=='object'?{x:c.x??c.t??'',nivel:nvN(c.nivel)}:{x:c,nivel:''};
+const FMEM=.8;/* las tarjetas ⭐ vuelven antes: intervalos al 80 % */
+const esMem=c=>nvN(c?.nivel)=='memoria';
+const pregMem=q=>/Nivel:\s*⭐/.test(q?.explicacion||'');
 const plain=s=>String(s??'').replace(/\$\$?([^$]+)\$\$?/g,'$1').replace(/\*\*|==|\[\[|\]\]|!!|\{\{|\}\}/g,'');
 
 /* ============ contenido ============ */
 const CAJA={paraque:'🎯 Para qué',idea:'💡 La idea',truco:'🪄 Truco',ojo:'⚠️ Ojo en el examen',recuerda:'📌 Para recordar',mnemo:'🧠 Regla para memorizar',amplia:'➕ Ampliación · ha salido en el examen y no viene en los apuntes',ejemplo:'🔢 Ejemplo con números'};
-let CACHE={sig:'',T:[],ign:new Set()};
+let CACHE={sig:'',T:[],ign:new Set(),NC:{}};
 const esV2=j=>(j.partes||[]).some(p=>Array.isArray(p.pildoras));
 function temario(){const est=Z().est||{},sig=Object.entries(est).map(([k,v])=>k+v.length).join('|');if(sig===CACHE.sig)return CACHE.T;const T={};
  const js=Object.entries(est).map(([f,t])=>{try{return[f,JSON.parse(t)]}catch{return null}}).filter(x=>x&&Array.isArray(x[1].partes));
@@ -128,9 +141,10 @@ function temario(){const est=Z().est||{},sig=Object.entries(est).map(([k,v])=>k+
    if(!Array.isArray(pil)){const b=[];[].concat(p.texto||[]).forEach(x=>b.push({t:'p',x}));
     if(p.entender)b.push({t:'caja',tipo:'idea',x:p.entender});if(p.mnemo)b.push({t:'caja',tipo:'mnemo',x:p.mnemo});pil=[{titulo:p.titulo||'',bloques:b}]}
    o.partes.push({id:pid,tema:k,titulo:p.titulo||'Parte '+(pi+1),pagina:[].concat(p.pagina??[]),examen:+p.examen||0,estrella:!!p.estrella,paraque:p.paraque||'',
-    gancho:p.gancho||null,pildoras:pil,claves:p.claves||[],reto:p.reto||[],
-    cards:(p.tarjetas||[]).map((x,i)=>({...x,cid:`${k}:${pid}:${x.id??i}`,tema:k,parte:pid})).filter(c=>c.c||(c.q&&c.a)||c.vf)})})}
- CACHE={sig,T:Object.values(T).sort((a,b)=>cmp(a.tema,b.tema)),ign};return CACHE.T}
+    gancho:p.gancho||null,pildoras:pil,claves:(p.claves||[]).map(clv),reto:p.reto||[],
+    cards:(p.tarjetas||[]).map((x,i)=>({...x,nivel:nvN(x.nivel),cid:`${k}:${pid}:${x.id??i}`,tema:k,parte:pid})).filter(c=>c.c||(c.q&&c.a)||c.vf)})})}
+ const NC={};for(const t of Object.values(T))for(const p of t.partes)for(const c of p.cards)if(c.nivel)NC[c.cid]=c.nivel;
+ CACHE={sig,T:Object.values(T).sort((a,b)=>cmp(a.tema,b.tema)),ign,NC};return CACHE.T}
 const tema=t=>temario().find(x=>x.tema==t),part=(t,p)=>tema(t)?.partes.find(x=>x.id==p);
 
 /* ============ configuración, registro y repetición espaciada ============ */
@@ -141,15 +155,16 @@ const notas=()=>{const n={};revs().forEach(r=>{for(const[k,v]of Object.entries(r
 const logs=()=>{const l=[];revs().forEach(r=>l.push(...(r.log||[])));return l.sort((a,b)=>a.t-b.t)};
 const apunta=e=>{Z().rev.log.push({t:Date.now(),...e});QZ.guardar()};
 const nuevo=t=>({ease:2.5,ivl:0,due:0,reps:0,lap:0,first:t});
-function paso(s,t,g){const ex=exam();
- if(!s.reps){if(g==1)s.due=t+MIN;else if(g==2)s.due=t+6*MIN;else{s.reps=1;s.ivl=g==3?1:4;s.due=t+s.ivl*DAY}}
+function paso(s,t,g,f=1){const ex=exam();
+ if(!s.reps){if(g==1)s.due=t+MIN;else if(g==2)s.due=t+6*MIN;else{s.reps=1;s.ivl=g==3?1:f<1?3:4;s.due=t+s.ivl*DAY}}
  else if(g==1){s.lap++;s.ease=Math.max(1.3,s.ease-.2);s.ivl=1;s.due=t+10*MIN}
- else{const k=g==2?1.2:g==3?s.ease:s.ease*1.3;if(g==2)s.ease=Math.max(1.3,s.ease-.15);if(g==4)s.ease+=.15;s.ivl=Math.max(s.ivl+1,Math.round(s.ivl*k));s.due=t+s.ivl*DAY}
+ else{const k=g==2?1.2:g==3?s.ease:s.ease*1.3;if(g==2)s.ease=Math.max(1.3,s.ease-.15);if(g==4)s.ease+=.15;s.ivl=Math.max(s.ivl+1,Math.round(s.ivl*k*f));s.due=t+s.ivl*DAY}
  if(ex>t&&s.reps){const mx=Math.max(1,Math.floor((ex-t)/DAY/2));if(s.ivl>mx){s.ivl=mx;s.due=t+mx*DAY}}return s}
 /* todo el estado se reconstruye desde el registro (así se fusionan los dispositivos sin conflictos) */
+const fac=cid=>(temario(),CACHE.NC[cid]=='memoria'?FMEM:1);
 function estado(){const E={},act={},fin={},reto={},xpd={};let xp=0,best=0;const h0=hoy0(),dias=new Set();
  for(const e of logs()){const d=fdia(e.t);let g=0;
-  if(e.c){E[e.c]=paso(E[e.c]??nuevo(e.t),e.t,e.g);g=e.g>1?3:1}
+  if(e.c){E[e.c]=paso(E[e.c]??nuevo(e.t),e.t,e.g,fac(e.c));g=e.g>1?3:1}
   else if(e.a){act[e.a]=act[e.a]||e.t}
   else if(e.fin){if(!fin[e.fin])g=30;fin[e.fin]=e.t}
   else if(e.x){(reto[e.x]??={})[e.q]=e.ok;g=e.ok?10:2}
@@ -160,7 +175,7 @@ function estado(){const E={},act={},fin={},reto={},xpd={};let xp=0,best=0;const 
  return{E,act,fin,reto,xp,hoy:xpd[fdia(Date.now())]||0,racha,best,h0}}
 const nivel=xp=>{let n=1,need=60,acc=0;while(xp>=acc+need){acc+=need;n++;need=Math.round(need*1.25)}return{n,de:xp-acc,need}};
 const lab=(s,t)=>{const d=s.due-t;return d<36e5?Math.max(1,Math.round(d/MIN))+' min':d<DAY?Math.round(d/36e5)+' h':Math.round(d/DAY)+' d'};
-const hint=(c,g)=>{const t=Date.now(),e=ST.E[c.cid];return lab(paso(e?{...e}:nuevo(t),t,g),t)};
+const hint=(c,g)=>{const t=Date.now(),e=ST.E[c.cid];return lab(paso(e?{...e}:nuevo(t),t,g,esMem(c)?FMEM:1),t)};
 const niv=s=>!s?0:s.ivl>=21?2:1;
 const bar=(cs,E)=>{const n=[0,0,0];cs.forEach(c=>n[niv(E[c.cid])]++);const t=cs.length||1;
  return`<div class=eb><i style="width:${100*n[2]/t}%;background:#16a34a"></i><i style="width:${100*n[1]/t}%;background:#f59e0b"></i></div><small style="color:var(--mut)">${n[2]} dominadas · ${n[1]} aprendiendo · ${n[0]} nuevas</small>`};
@@ -168,7 +183,7 @@ const estP=(p,S0)=>S0.fin[p.tema+':'+p.id]?'ok':S0.act[p.tema+':'+p.id]?'mid':''
 const save=()=>QZ.guardar(),R=()=>{window.go('estudio')},RR=()=>{if(typeof render=='function')render()};
 function pendientes(S0){const cs=temario().flatMap(t=>t.partes.flatMap(p=>p.cards)),now=Date.now(),lim=cfgs().nuevas??10,
  nh=Object.values(S0.E).filter(s=>s.first>=S0.h0).length,due=cs.filter(c=>S0.E[c.cid]&&S0.E[c.cid].due<=now),
- nw=cs.filter(c=>!S0.E[c.cid]&&S0.act[c.tema+':'+c.parte]).slice(0,Math.max(0,lim-nh));return{due,nw}}
+ nw=cs.filter(c=>!S0.E[c.cid]&&S0.act[c.tema+':'+c.parte]).sort((a,b)=>esMem(b)-esMem(a)).slice(0,Math.max(0,lim-nh));return{due,nw}}
 function siguiente(S0){for(const t of temario())for(const p of t.partes)if(!S0.fin[t.tema+':'+p.id])return p;return null}
 
 /* ============ efectos ============ */
@@ -185,7 +200,7 @@ function focoTick(){const el=$$('#foco');if(!FOCO){el&&el.remove();return}let e=
 function bloque(b,i){const x=b.x;switch(b.t){
  case'p':return`<p class=t>${rt(x)}</p>`;
  case'caja':return`<div class="bx ${esc(b.tipo||'idea')}"><span class=bh>${esc(b.titulo||CAJA[b.tipo]||'')}</span>${rt(x)}</div>`;
- case'formula':return`<div class=fm>${b.n?`<span class=fn>(${esc(b.n)})</span>`:''}${b.nombre?`<b>${rt(b.nombre)}</b>`:''}${mat(b.tex,true)}${b.lee?`<div class=fl><b>Cómo leerla:</b> ${rt(b.lee)}</div>`:''}</div>`;
+ case'formula':return`<div class="fm ${nvN(b.nivel)}">${b.n?`<span class=fn>(${esc(b.n)})</span>`:''}${nvB(b.nivel)}${b.nombre?`<b>${rt(b.nombre)}</b>`:''}${mat(b.tex,true)}${b.lee?`<div class=fl><b>Cómo leerla:</b> ${rt(b.lee)}</div>`:''}</div>`;
  case'fig':return`<div class=fg><div><div class=im onclick="EST.zoom(this)">${String(b.img||'').startsWith('data:')||/\.(png|jpe?g|webp|svg)$/i.test(b.img||'')?`<img src="${esc(b.img)}" alt="${esc(plain(b.pie))}">`:`<div style="padding:30px 10px;color:#666;text-align:center">${esc(b.img||'Figura')}</div>`}</div><div class=pc>${rt(b.pie||'')}</div></div><div class=lx>${rt(b.lee||'')}</div></div>`;
  case'tabla':return`<div style="overflow-x:auto"><table class=tb><thead><tr>${(b.cab||[]).map(c=>`<th>${rt(c)}</th>`).join('')}</tr></thead><tbody>${(b.filas||[]).map(f=>`<tr>${f.map(c=>`<td>${rt(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
  case'lista':return`<ul>${(b.items||[]).map(c=>`<li style="margin:6px 0">${rt(c)}</li>`).join('')}</ul>`;
@@ -257,7 +272,7 @@ function vParte(){katexOn();const P=part(ST.t,ST.p);if(!P)return home();const s=
  if(s==2){const nt=notas()[k]?.x||'';
   if(!ST.cmp)return hd+`<div class=card><p class=t style="margin-top:0"><b>Sin mirar</b>, escribe o di en voz alta todo lo que recuerdes de esta parte, como si se lo explicaras a alguien. Fórmulas incluidas. El esfuerzo de recordar es lo que graba.</p><textarea id=nt placeholder="Lo que recuerdo…">${esc(nt)}</textarea></div><button class="btn pri bigbtn" onclick="EST.comp()">Comparar con las claves →</button></div>`;
   const cl=P.claves,ok=Object.values(ST.cmp).filter(v=>v==1).length,dec=Object.keys(ST.cmp).length;
-  return hd+`<div class=card><h2>¿Lo dijiste? Marca cada clave</h2><ul class=cl>${cl.map((x,i)=>`<li><span class=tg><button class="${ST.cmp[i]==1?'y':''}" onclick="EST.cl(${i},1)">✓</button><button class="${ST.cmp[i]==0?'n':''}" onclick="EST.cl(${i},0)">✗</button></span><span>${rt(x)}</span></li>`).join('')}</ul>
+  return hd+`<div class=card><h2>¿Lo dijiste? Marca cada clave</h2><ul class=cl>${cl.map((x,i)=>`<li><span class=tg><button class="${ST.cmp[i]==1?'y':''}" onclick="EST.cl(${i},1)">✓</button><button class="${ST.cmp[i]==0?'n':''}" onclick="EST.cl(${i},0)">✗</button></span><span>${nvB(x.nivel)}${rt(x.x)}</span></li>`).join('')}</ul>
   ${dec==cl.length&&cl.length?`<div class="bx ${ok/cl.length>=.7?'ejemplo':'truco'}"><span class=bh>${ok}/${cl.length} claves</span>${ok/cl.length>=.7?'¡Muy bien! Las tarjetas terminarán de fijarlo.':'Normal en la primera vuelta. Relee las que marcaste con ✗ (botón de abajo) o pasa a las tarjetas: están hechas para eso.'}</div>`:''}
   ${nt?`<details><summary style="cursor:pointer;color:var(--mut)">Lo que escribiste</summary><p class=t>${esc(nt).replace(/\n/g,'<br>')}</p></details>`:''}</div>
   <div class=row><button class=btn onclick="EST.s(1)">📖 Releer</button><span class=sp></span><button class="btn pri" onclick="EST.s(3)">Pasar a las tarjetas (${P.cards.length}) ▶</button></div></div>`}
@@ -271,7 +286,7 @@ function preguntasReto(P){const pr=Z().pregs||[],ids=new Set(P.reto);let l=pr.fi
  /* si el banco se ha editado y faltan ids, se completa con preguntas del tema en las mismas páginas */
  if(l.length<5&&P.pagina.length)l=l.concat(pr.filter(q=>!ids.has(q.id)&&q.tema==P.tema&&P.pagina.includes(+q.pagina)));
  if(!l.length)l=pr.filter(q=>q.tema==P.tema);
- const S0=estado(),r=S0.reto[P.tema+':'+P.id]||{};l=shuf([...l]).sort((a,b)=>(r[a.id]===true)-(r[b.id]===true));
+ const S0=estado(),r=S0.reto[P.tema+':'+P.id]||{};l=shuf([...l]).sort((a,b)=>((r[a.id]===true)-(r[b.id]===true))||(pregMem(b)-pregMem(a)));
  return l.slice(0,5).map(q=>{const o=shuf([0,1,2,3]);return{...q,ops:o.map(i=>q.opciones[i]),cor:o.indexOf(q.correcta)}})}
 function vReto(P){if(!ST.R){ST.R={qs:preguntasReto(P),i:0,m:[],t0:Date.now()}}const R0=ST.R;
  if(!R0.qs.length)return`<div class=card><h2>🏆 Reto</h2><p class=t>Todavía no hay preguntas de <b>${esc(P.tema)}</b> en tu banco. Importa el banco del tema (${esc(P.tema)}.json) desde «Sincronizar» y el reto se activará solo.</p></div><button class="btn pri bigbtn" onclick="EST.terminar()">Marcar la parte como completada ✓</button></div>`;
@@ -293,7 +308,8 @@ function guardaReto(P){const R0=ST.R;if(!R0||R0.ok)return;R0.ok=1;const ex=Z().c
  save();QZ.bg()}
 
 /* ---------- sesión de tarjetas ---------- */
-function cola(n){const S0=estado(),{due,nw}=pendientes(S0);return[...shuf(due),...nw].slice(0,n)}
+const memPri=l=>l.sort((a,b)=>esMem(b)-esMem(a));/* orden estable: dentro de cada grupo se mantiene el barajado */
+function cola(n){const S0=estado(),{due,nw}=pendientes(S0);return[...memPri(shuf(due)),...nw].slice(0,n)}
 function empieza(q,vuelta){if(!q.length)return tst('No hay tarjetas pendientes.');katexOn();ST={v:'ses',q,i:0,m:false,r:null,E:estado().E,t0:Date.now(),g:[0,0,0,0,0],vuelta,n:q.length};R()}
 function vSes(){const q=ST.q;
  if(ST.i>=q.length){const n=ST.g.reduce((a,b)=>a+b,0),ok=ST.g[2]+ST.g[3]+ST.g[4];
@@ -306,7 +322,7 @@ function vSes(){const q=ST.q;
  const sug=c.vf!=null&&ST.m&&ST.r!=null?(ST.r==(c.ok?0:1)?3:1):0;
  return`<div class=es><div class=row style="justify-content:space-between"><b>${ST.i+1}/${q.length}</b><small style="color:var(--mut)">${esc(c.tema)} · ${esc(plain(P?.titulo||''))}</small><button class=btn onclick="${ST.vuelta?'EST.vuelta()':'EST.home()'}">Salir</button></div>
  <div class=eb><i style="width:${100*ST.i/q.length}%;background:#7c3aed"></i></div>
- <div class="card ec"><span class=ty>${ty}</span><br>${body}${!ST.m&&c.pista?`<details style="margin-top:12px;font-size:.85em"><summary style="cursor:pointer;color:var(--mut)">💭 Pista</summary>${rt(c.pista)}</details>`:''}</div>
+ <div class="card ec"><span class=ty>${ty}</span> ${nvB(c.nivel)}<br>${body}${!ST.m&&c.pista?`<details style="margin-top:12px;font-size:.85em"><summary style="cursor:pointer;color:var(--mut)">💭 Pista</summary>${rt(c.pista)}</details>`:''}</div>
  ${ST.m?`<div class=gr>${[1,2,3,4].map(g=>`<button class=btn style="border-color:${col[g]};${g==sug?`background:${col[g]}22;`:''}" onclick="EST.g(${g})"><b>${nom[g]}</b><br><small>${hint(c,g)}</small></button>`).join('')}</div><p class=kbd><kbd>1</kbd>–<kbd>4</kbd> valorar</p>`
  :c.vf!=null?`<div class=vfb><button class="btn" style="border-color:var(--good);color:var(--good)" onclick="EST.vf(0)">✓ Verdadero</button><button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="EST.vf(1)">✗ Falso</button></div><p class=kbd><kbd>V</kbd> / <kbd>F</kbd></p>`
  :`<button class="btn pri bigbtn" onclick="EST.m()">Mostrar respuesta</button><p class=kbd><kbd>Espacio</kbd> mostrar</p>`}</div>`}
@@ -319,10 +335,17 @@ function archivos(){temario();const est=Z().est||{},ks=Object.keys(est).sort();i
 
 /* ---------- chuleta del tema ---------- */
 function vChul(){katexOn();const t=tema(ST.t);if(!t)return home();
+ const fb=b=>`<div class="fm ${nvN(b.nivel)}" style="margin:8px 0">${b.n?`<span class=fn>(${esc(b.n)})</span>`:''}${nvB(b.nivel)}${b.nombre?`<b>${rt(b.nombre)}</b>`:''}${mat(b.tex,true)}</div>`;
+ const bl=p=>p.pildoras.flatMap(x=>x.bloques||[]);
+ /* ⭐ arriba del todo: fórmulas y claves de memoria de todas las partes */
+ const mem=t.partes.map(p=>({p,f:bl(p).filter(b=>b.t=='formula'&&nvN(b.nivel)=='memoria'),c:p.claves.filter(c=>c.nivel=='memoria')})).filter(x=>x.f.length||x.c.length);
  return`<div class=es><p><button class=btn onclick="EST.tema('${t.tema}')">◀ ${esc(t.tema)}</button></p><h1>📋 Chuleta · ${esc(t.tema)}</h1><p class=sub>Todo lo memorizable del tema en una pantalla: fórmulas, claves, trucos y trampas. Ideal para el último repaso.</p>
- ${t.partes.map(p=>{const bs=p.pildoras.flatMap(x=>x.bloques||[]),f=bs.filter(b=>b.t=='formula'),c=bs.filter(b=>b.t=='caja'&&['ojo','truco','mnemo','recuerda','amplia'].includes(b.tipo));
-  return`<div class=card><h2>${esc(p.titulo)} ${p.estrella?'<span class=star>★</span>':''}</h2>${p.claves.length?`<ul>${p.claves.map(x=>`<li style="margin:5px 0">${rt(x)}</li>`).join('')}</ul>`:''}
-  ${f.map(b=>`<div class=fm style="margin:8px 0">${b.n?`<span class=fn>(${esc(b.n)})</span>`:''}${b.nombre?`<b>${rt(b.nombre)}</b>`:''}${mat(b.tex,true)}</div>`).join('')}${c.map(b=>bloque(b,0)).join('')}</div>`}).join('')}</div>`}
+ ${mem.length?`<div class=card style="border:2px solid #f59e0b99"><h2>⭐ Fórmulas de memoria</h2><p class=sub style="margin:0 0 6px">Lo que hay que saber escribir o reconocer al instante. Si solo te da tiempo a repasar una cosa, que sea esto.</p>
+  ${mem.map(({p,f,c})=>`<h3 style="margin:12px 0 4px;font-size:1em;color:var(--mut)">${esc(p.titulo)}</h3>${f.map(fb).join('')}${c.length?`<ul>${c.map(x=>`<li style="margin:5px 0">${rt(x.x)}</li>`).join('')}</ul>`:''}`).join('')}
+  <p class=sub style="margin:10px 0 0">${nvB('reconocer')} basta con saber su forma · ${nvB('idea')} basta con saber qué hace</p></div>`:''}
+ ${t.partes.map(p=>{const bs=bl(p),f=bs.filter(b=>b.t=='formula').sort((a,b)=>NVR[nvN(a.nivel)]-NVR[nvN(b.nivel)]),c=bs.filter(b=>b.t=='caja'&&['ojo','truco','mnemo','recuerda','amplia'].includes(b.tipo));
+  return`<div class=card><h2>${esc(p.titulo)} ${p.estrella?'<span class=star>★</span>':''}</h2>${p.claves.length?`<ul>${p.claves.map(x=>`<li style="margin:5px 0">${nvB(x.nivel)}${rt(x.x)}</li>`).join('')}</ul>`:''}
+  ${f.map(fb).join('')}${c.map(b=>bloque(b,0)).join('')}</div>`}).join('')}</div>`}
 
 /* ---------- relámpago: 60 s de verdadero/falso ---------- */
 function poolRel(){const S0=estado(),T=temario(),l=[];let ps=T.flatMap(t=>t.partes);const vis=ps.filter(p=>S0.act[p.tema+':'+p.id]);if(vis.length)ps=vis;
@@ -353,8 +376,8 @@ window.EST={
  chk(key,j){(ST.ck??={})[key]=j;RR()},
  comp(){const a=$$('#nt');if(a){(Z().rev.notas??={})[ST.t+':'+ST.p]={x:a.value,t:Date.now()};save()}ST.cmp={};RR()},
  cl(i,v){ST.cmp[i]=v;RR()},
- tarj(){const S0=estado(),now=Date.now(),P=part(ST.t,ST.p);empieza(P.cards.filter(c=>!S0.E[c.cid]||S0.E[c.cid].due<=now),{v:'parte',t:ST.t,p:ST.p,s:4,k:ST.k})},
- rep(t,p){const S0=estado(),now=Date.now();empieza(shuf(part(t,p).cards.filter(c=>S0.E[c.cid]&&S0.E[c.cid].due<=now)),{v:'tema',t})},
+ tarj(){const S0=estado(),now=Date.now(),P=part(ST.t,ST.p);empieza(memPri(P.cards.filter(c=>!S0.E[c.cid]||S0.E[c.cid].due<=now)),{v:'parte',t:ST.t,p:ST.p,s:4,k:ST.k})},
+ rep(t,p){const S0=estado(),now=Date.now();empieza(memPri(shuf(part(t,p).cards.filter(c=>S0.E[c.cid]&&S0.E[c.cid].due<=now))),{v:'tema',t})},
  todo(t){empieza(shuf(tema(t).partes.flatMap(p=>p.cards)),{v:'tema',t})},
  reto(t,p){ST={v:'parte',t,p,s:4,k:0,ck:{},cmp:null,R:null};R()},
  rr(j){const R0=ST.R,q=R0.qs[R0.i];R0.m[R0.i]=j;apunta({x:ST.t+':'+ST.p,q:q.id,ok:j==q.cor});RR()},
@@ -363,7 +386,7 @@ window.EST={
   const T=tema(t),i=T.partes.findIndex(p=>p.id==ST.p),nx=T.partes[i+1];if(nx){tst('¡Parte completada! +30 XP');EST.parte(t,nx.id)}else{tst('¡Tema completado! 🏆');EST.tema(t)}},
  vuelta(){const v=ST.vuelta;if(!v)return EST.home();ST={...v,ck:{},cmp:null,R:null};R()},
  cola(n){empieza(cola(n))},m(){ST.m=true;RR()},vf(j){ST.r=j;ST.m=true;RR()},
- g(g){const c=ST.q[ST.i],t=Date.now();Z().rev.log.push({t,c:c.cid,g});ST.E[c.cid]=paso(ST.E[c.cid]?{...ST.E[c.cid]}:nuevo(t),t,g);ST.g[g]++;save();
+ g(g){const c=ST.q[ST.i],t=Date.now();Z().rev.log.push({t,c:c.cid,g});ST.E[c.cid]=paso(ST.E[c.cid]?{...ST.E[c.cid]}:nuevo(t),t,g,esMem(c)?FMEM:1);ST.g[g]++;save();
   if(g==1)ST.q.splice(Math.min(ST.q.length,ST.i+5),0,c);ST.i++;ST.m=false;ST.r=null;if(ST.i>=ST.q.length){QZ.bg();if(ST.g[1]<ST.n/3)confeti()}RR()},
  relampago(){ST={v:'rel',G:{l:poolRel(),i:0,p:0,r:0,mx:0,ok:0,ko:0,mal:[],fin:Date.now()+6e4}};R()},
  rv(v){const G=ST.G;if(G.done||Date.now()>=G.fin)return RR();const it=G.l[G.i%G.l.length],ok=(v==1)==it.ok;
