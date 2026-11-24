@@ -93,6 +93,36 @@ svg text{fill:var(--mut);font-size:11px}
 @media(max-width:980px){aside{display:flex;flex-direction:row;position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;height:auto;z-index:8;padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:2px;border-right:0;border-top:1px solid var(--bd)}
 aside .logo,aside .side-foot{display:none}aside .nav{flex:1;flex-direction:column;gap:2px;padding:6px 2px;font-size:11px;text-align:center;justify-content:center}
 main{padding:16px 14px calc(86px + env(safe-area-inset-bottom))}body.focus main{padding-bottom:40px}main table{display:block;overflow-x:auto}}
+/* ===== color (v2) ===== */
+.logo i{background:linear-gradient(135deg,#7c3aed,#0d9488)}
+aside{background:linear-gradient(180deg,var(--card) 55%,color-mix(in srgb,#7c3aed 7%,var(--card)))}
+.nav.on{background:linear-gradient(90deg,color-mix(in srgb,#7c3aed 16%,transparent),color-mix(in srgb,#0d9488 12%,transparent));color:var(--tx)}
+.btn.pri{background:linear-gradient(135deg,#0f766e,#14b8a6);border-color:#0f766e}
+h1{letter-spacing:-.01em}
+.kpi{position:relative;overflow:hidden;border-top:4px solid var(--c,#0d9488);background:linear-gradient(160deg,color-mix(in srgb,var(--c,#0d9488) 10%,var(--card)),var(--card) 65%)}
+.kpi .ki{position:absolute;right:14px;top:12px;font-size:22px}
+.tile.has.good{background:var(--goodbg);border-color:var(--good);color:var(--good)}.tile.has.mid{background:var(--midbg);border-color:var(--mid);color:var(--mid)}.tile.has.bad{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+.kpi .kl{padding-right:30px}
+.bar.bq>i{background:var(--c)}.bq{color:var(--c)}
+.tgrp{margin-bottom:12px}.tgrp>small{display:block;font-weight:800;color:var(--c);margin-bottom:6px;font-size:12px}
+.tile.has{border-color:color-mix(in srgb,var(--c) 55%,var(--bd));background:color-mix(in srgb,var(--c) 8%,var(--card));color:var(--c)}
+.type{border-top:5px solid var(--c)}.type b{color:var(--c);font-size:16px}.type .em{font-size:24px;display:block;margin-bottom:4px}
+.type.on{border-color:var(--c);background:color-mix(in srgb,var(--c) 11%,var(--card))}.type:hover{border-color:var(--c)}
+.chip.on.bqc{background:color-mix(in srgb,var(--c) 15%,var(--card));border-color:var(--c);color:var(--c)}
+.badge.tb{background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c)}
+.qtop .bar>i{background:linear-gradient(90deg,#7c3aed,#14b8a6)}
+.expl{background:color-mix(in srgb,#0d9488 10%,var(--card));border-left:4px solid #0d9488}
+.expl .truco{display:block;margin-top:9px;background:color-mix(in srgb,#f59e0b 16%,var(--card));border-left:4px solid #f59e0b;border-radius:8px;padding:8px 12px;font-weight:600}
+.expl .amp{display:inline-block;background:color-mix(in srgb,#64748b 18%,transparent);border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;margin-right:4px}
+.fire{background:linear-gradient(90deg,#f59e0b,#dc2626);color:#fff;border-radius:999px;padding:3px 10px;font-weight:800;font-size:13px}
+.opt.ok{animation:pop .35s}@keyframes pop{50%{transform:scale(1.015)}}
+.meter{position:relative;height:14px;border-radius:99px;background:linear-gradient(90deg,#fecaca 0 50%,#fde68a 50% 60%,#bbf7d0 60%);margin:26px 0 30px}
+body.dk .meter{background:linear-gradient(90deg,#4c1d1d 0 50%,#4a3a0c 50% 60%,#12331f 60%)}
+.meter .mk{position:absolute;top:-4px;width:6px;height:22px;border-radius:3px;background:var(--tx);transform:translateX(-50%)}
+.meter .tk{position:absolute;top:20px;font-size:11px;color:var(--mut);transform:translateX(-50%);white-space:nowrap}
+.meter .tk.up{top:-20px}
+.hero .score{background:linear-gradient(135deg,var(--sc1),var(--sc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.rev.ok{border-left-color:#16a34a}.rev{border-left-width:5px}
 </style>
 </head>
 <body>
@@ -100,9 +130,9 @@ main{padding:16px 14px calc(86px + env(safe-area-inset-bottom))}body.focus main{
   <aside>
     <div class="logo"><i>▲</i>Quiz Topografía</div>
     <button class="nav" data-v="panel" onclick="go('panel')">📊&nbsp; Panel</button>
+    <button class="nav" data-v="estudio" onclick="go('estudio')">🧠&nbsp; Estudiar</button>
     <button class="nav" data-v="nuevo" onclick="go('nuevo')">✍️&nbsp; Nuevo test</button>
     <button class="nav" data-v="hist" onclick="go('hist')">🗂️&nbsp; Historial</button>
-    <button class="nav" data-v="estudio" onclick="go('estudio')">🧠&nbsp; Estudiar</button>
     <button class="nav" data-v="banco" onclick="go('banco')">📚&nbsp; Banco</button>
     <button class="nav" data-v="sync" onclick="go('sync')">☁️&nbsp; Sincronizar</button>
     <div class="side-foot" id="foot"></div>
@@ -115,6 +145,11 @@ main{padding:16px 14px calc(86px + env(safe-area-inset-bottom))}body.focus main{
 const $=s=>document.querySelector(s), L='ABCD';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fecha=i=>new Date(i).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+const BC={COM:'#7c3aed',A:'#2563eb',B:'#0d9488',C:'#ea580c',D:'#db2777'};
+const bcol=t=>BC[QZ.Z.mapa?.[t]]||'#64748b';
+function expl(t){let x=String(t||''),tr='';const i=x.search(/Truco:/);if(i>=0){tr=x.slice(i+6).trim();x=x.slice(0,i).trim()}
+  let h=esc(x).replace(/^Ampliaci[oó]n \(ha salido en el examen y no viene en los apuntes\):?\s*/,'<span class="amp">➕ Ampliación · ha salido en examen</span> ');
+  return h+(tr?`<span class="truco">🪄 Truco: ${esc(tr)}</span>`:'')}
 const cl=p=>p==null?'':p>=70?'good':p>=50?'mid':'bad';
 const fmt=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s%60).padStart(2,'0')};
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2800)}
@@ -142,12 +177,13 @@ async function render(arg){
     else if(S.view==='res')m.innerHTML=vRes(S.res,true);
     else if(S.view==='det'){const r=await api('sesion?i='+arg);S.res=r;m.innerHTML=vRes(r,false)}
     if(S.view==='res'||S.view==='det')renderRev();
+    if(S.view==='res'&&S.res?.sesion?.apto&&!S.res._cf){S.res._cf=1;window.EST?.confeti?.()}
     if(S.view==='quiz')tick();
   }catch(e){$('#main').innerHTML=`<div class="card"><h2>No se pudo cargar</h2><p class="bad">${esc(e.message)}</p></div>`}
 }
 
 /* ---------- componentes ---------- */
-const kpi=(l,v,s='')=>`<div class="card kpi"><div class="kl">${l}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
+const kpi=(l,v,s='',ic='',c='')=>`<div class="card kpi" style="${c?'--c:'+c:''}">${ic?`<span class="ki">${ic}</span>`:''}<div class="kl">${l}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;
 const bar=(p,c)=>`<div class="bar ${c??cl(p)}"><i style="width:${p||0}%"></i></div>`;
 
 function chart(ses,key,apr){
@@ -175,21 +211,22 @@ async function vPanel(){
   const reforzar=st.por_tema.filter(t=>t.ac+t.fa>=3).sort((a,b)=>a.pct-b.pct).slice(0,5);
   return`<h1>Panel</h1><p class="sub">Tu progreso de un vistazo.</p>
   <div class="grid g4">
-   ${kpi('Tests realizados',st.sesiones.length,st.sesiones.length?'último: '+fecha(st.sesiones.at(-1).fecha):'todavía ninguno')}
-   ${kpi('% de acierto',st.pct_global==null?'–':`<span class="${cl(st.pct_global)}">${st.pct_global}%</span>`,'media de todos los intentos')}
-   ${kpi('Nota media',st.nota_media5==null?'–':st.nota_media5,`últimos 5 · aprobado ${info.examen.puntos_aprobado}/${info.examen.puntos_maximos}`)}
-   ${kpi('Racha',st.racha+(st.racha===1?' día':' días'),'días seguidos estudiando')}
-   ${kpi('Preguntas falladas',st.falladas,`${st.dominadas} dominadas`)}
+   ${kpi('Tests realizados',st.sesiones.length,st.sesiones.length?'último: '+fecha(st.sesiones.at(-1).fecha):'todavía ninguno','📝','#2563eb')}
+   ${kpi('% de acierto',st.pct_global==null?'–':`<span class="${cl(st.pct_global)}">${st.pct_global}%</span>`,'media de todos los intentos','🎯','#0d9488')}
+   ${kpi('Nota media',st.nota_media5==null?'–':`<span class="${st.nota_media5>=12?'good':st.nota_media5>=10?'mid':'bad'}">${st.nota_media5}</span>`,`últimos 5 · aprobado ${info.examen.puntos_aprobado} · conservas nota con 12`,'🏅','#7c3aed')}
+   ${kpi('Racha',st.racha+(st.racha===1?' día':' días'),'días seguidos estudiando','🔥','#ea580c')}
+   ${kpi('Preguntas falladas',st.falladas,`${st.dominadas} dominadas · repásalas en «Mis falladas»`,'🩹','#db2777')}
   </div>
+  ${window.EST?.resumen?.()||''}
   <div class="grid g2 mt">
    <div class="card"><div class="row"><h2 style="margin:0">Evolución por intento</h2><span class="sp"></span>
      <div class="seg"><button data-ck="pct" class="${S.ck==='pct'?'on':''}" onclick="setCk('pct')">% acierto</button><button data-ck="nota" class="${S.ck==='nota'?'on':''}" onclick="setCk('nota')">Nota</button></div></div>
      <div id="chart" class="mt">${chart(st.sesiones,S.ck,st.apr)}</div></div>
-   <div class="card"><h2>Por bloque</h2>${st.por_bloque.map(b=>`<div style="margin-bottom:14px"><div class="row"><b>${esc(b.nombre)}</b><span class="sp"></span><span class="${cl(b.pct)}"><b>${b.pct==null?'–':b.pct+'%'}</b></span></div>${bar(b.pct,b.pct==null?'':undefined)}<div class="ks" style="color:var(--mut);font-size:12px">${b.vistas}/${b.n} preguntas vistas</div></div>`).join('')}</div>
+   <div class="card"><h2>Por bloque</h2>${st.por_bloque.map(b=>`<div style="margin-bottom:14px;--c:${BC[b.bloque]}"><div class="row"><b><span class="bq">●</span> ${esc(b.nombre)}</b><span class="sp"></span><span class="${cl(b.pct)}"><b>${b.pct==null?'–':b.pct+'%'}</b></span></div><div class="bar bq"><i style="width:${b.pct||0}%"></i></div><div class="ks" style="color:var(--mut);font-size:12px">${b.vistas}/${b.n} preguntas vistas · 📝 ${info.bloques[b.bloque]?.preguntas_examen??'?'} en el examen</div></div>`).join('')}</div>
   </div>
   <div class="grid g2 mt">
-   <div class="card"><h2>Mapa de temas</h2><div class="tiles">${st.por_tema.map(t=>{const c=t.n?(t.pct==null?'has':'has '+cl(t.pct)):'';
-     return`<button class="tile ${c}" ${t.n?`onclick="practicar('${t.tema}')"`:'disabled'} title="${t.tema} · ${t.n} preguntas${t.pct==null?'':' · '+t.pct+'% acierto'}">${+t.tema.slice(-2)}</button>`}).join('')}</div>
+   <div class="card"><h2>Mapa de temas</h2>${Object.keys(BC).map(bk=>`<div class="tgrp" style="--c:${BC[bk]}"><small>${esc(info.bloques[bk]?.nombre||bk)}</small><div class="tiles">${st.por_tema.filter(t=>t.bloque===bk).map(t=>{const c=t.n?(t.pct==null?'has':'has '+cl(t.pct)):'';
+     return`<button class="tile ${c}" ${t.n?`onclick="practicar('${t.tema}')"`:'disabled'} title="${t.tema} · ${t.n} preguntas${t.pct==null?'':' · '+t.pct+'% acierto'}">${+t.tema.slice(-2)}</button>`}).join('')}</div></div>`).join('')}
      <div class="legend"><span><b style="background:var(--goodbg);border:1px solid var(--good)"></b>≥70 %</span><span><b style="background:var(--midbg);border:1px solid var(--mid)"></b>50–69 %</span><span><b style="background:var(--badbg);border:1px solid var(--bad)"></b>&lt;50 %</span><span><b style="background:var(--bg);border:1px solid var(--bd)"></b>sin intentos</span><span><b style="border:1px dashed var(--bd)"></b>sin preguntas</span></div></div>
    <div class="card"><h2>Temas a reforzar</h2>${reforzar.length?reforzar.map(t=>`<div class="row" style="margin-bottom:10px"><b style="width:64px">${t.tema}</b><div style="flex:1">${bar(t.pct)}</div><b class="${cl(t.pct)}" style="width:44px;text-align:right">${t.pct}%</b><button class="btn" style="padding:3px 10px" onclick="practicar('${t.tema}')">Practicar</button></div>`).join(''):'<div class="empty">Cuando respondas al menos 3 preguntas de un tema aparecerán aquí los más flojos.</div>'}</div>
   </div>
@@ -200,18 +237,18 @@ function practicar(t){S.nt.tipo='temas';S.nt.sel=new Set([t]);go('nuevo')}
 /* ---------- nuevo test ---------- */
 async function vNuevo(){
   const info=await api('info');S.info=info;const nt=S.nt;$('#foot').textContent=`${info.total} preguntas en el banco`;
-  const tipos=[['temas','Por temas','Elige temas o bloques'],['aleatorio','Aleatorio','Todo el banco, priorizando fallos'],['simulacro','Simulacro oficial',`${Object.values(info.bloques).reduce((a,b)=>a+b.preguntas_examen,0)} preguntas · ${info.examen.minutos} min · penaliza`],['falladas','Mis falladas',`${info.falladas} pendientes`]];
+  const tipos=[['temas','Por temas','Elige temas o bloques','📚','#2563eb'],['aleatorio','Aleatorio','Todo el banco, priorizando fallos','🎲','#7c3aed'],['simulacro','Simulacro oficial',`${Object.values(info.bloques).reduce((a,b)=>a+b.preguntas_examen,0)} preguntas · ${info.examen.minutos} min · penaliza`,'🏛️','#dc2626'],['falladas','Mis falladas',`${info.falladas} pendientes`,'🩹','#ea580c']];
   const con=info.temas.filter(t=>t.n);
   const pool=nt.tipo==='temas'?con.filter(t=>nt.sel.has(t.t)).reduce((a,t)=>a+t.n,0):nt.tipo==='aleatorio'?info.total:nt.tipo==='falladas'?info.falladas:null;
   const nn=nt.tipo==='simulacro'?null:Math.min(nt.n||pool,pool);
   const ok=nt.tipo==='simulacro'?info.total>0:pool>0;
   return`<h1>Nuevo test</h1><p class="sub">Configura tu sesión y empieza.</p>
   <div class="card">
-   <div class="opt-type">${tipos.map(([k,a,b])=>`<button class="type ${nt.tipo===k?'on':''}" ${k==='falladas'&&!info.falladas?'disabled':''} onclick="S.nt.tipo='${k}';render()"><b>${a}</b><span>${b}</span></button>`).join('')}</div>
+   <div class="opt-type">${tipos.map(([k,a,b,e,c])=>`<button class="type ${nt.tipo===k?'on':''}" style="--c:${c}" ${k==='falladas'&&!info.falladas?'disabled':''} onclick="S.nt.tipo='${k}';render()"><span class="em">${e}</span><b>${a}</b><span>${b}</span></button>`).join('')}</div>
    ${nt.tipo==='temas'?`<label class="lb">Bloques</label><div class="row">${Object.entries(info.bloques).map(([k,b])=>{const ts=con.filter(t=>t.bloque===k);const on=ts.length&&ts.every(t=>nt.sel.has(t.t));
-      return`<button class="chip ${on?'on':''}" ${ts.length?'':'disabled'} onclick="selBloque('${k}')">${esc(b.nombre)} <small>${b.n}</small></button>`}).join('')}
+      return`<button class="chip bqc ${on?'on':''}" style="--c:${BC[k]}" ${ts.length?'':'disabled'} onclick="selBloque('${k}')">${esc(b.nombre)} <small>${b.n}</small></button>`}).join('')}
       <button class="chip" onclick="S.nt.sel=new Set();render()">Limpiar</button></div>
-     <label class="lb">Temas con preguntas</label><div class="row">${con.length?con.map(t=>`<button class="chip ${nt.sel.has(t.t)?'on':''}" onclick="selTema('${t.t}')">${t.t} <small>${t.n}</small></button>`).join(''):'<span class="bad">No hay preguntas en la carpeta banco/.</span>'}</div>`:''}
+     <label class="lb">Temas con preguntas</label><div class="row">${con.length?con.map(t=>`<button class="chip bqc ${nt.sel.has(t.t)?'on':''}" style="--c:${BC[t.bloque]}" onclick="selTema('${t.t}')">${t.t} <small>${t.n}</small></button>`).join(''):'<span class="bad">No hay preguntas en la carpeta banco/.</span>'}</div>`:''}
    ${nt.tipo!=='simulacro'?`<label class="lb">Modo</label><div class="seg"><button class="${nt.modo==='estudio'?'on':''}" onclick="S.nt.modo='estudio';render()">Estudio · feedback al instante</button><button class="${nt.modo==='examen'?'on':''}" onclick="S.nt.modo='examen';render()">Examen · corrige al final</button></div>
     <label class="lb">Número de preguntas</label><div class="row">${[10,20,40,0].map(n=>`<button class="chip ${nt.n===n?'on':''}" onclick="S.nt.n=${n};render()">${n||'Todas'}</button>`).join('')}
      <input type="number" min="1" placeholder="otro" onchange="S.nt.n=+this.value||20;render()"></div>`:
@@ -243,10 +280,10 @@ function vQuiz(){
   const cls=j=>{if(est&&fb)return j===fb.cor?'ok':j===m?'ko':'dim';return j===m?'sel':''};
   return`<div class="qtop"><b>${esc(q.titulo)}</b><div class="bar"><i style="width:${100*hecho/q.qs.length}%"></i></div><span class="badge">${hecho}/${q.qs.length}</span><span class="timer" id="timer"></span></div>
   <div class="qlayout"><div class="card">
-    <div class="row"><span class="badge">Pregunta ${q.i+1} de ${q.qs.length}</span><span class="badge">${p.tema}</span>${p.pagina?`<span class="badge">pág. ${p.pagina}</span>`:''}</div>
+    <div class="row"><span class="badge">Pregunta ${q.i+1} de ${q.qs.length}</span><span class="badge tb" style="--c:${bcol(p.tema)}">${p.tema}</span>${p.pagina?`<span class="badge">pág. ${p.pagina}</span>`:''}<span class="sp"></span>${est&&(q.st||0)>=3?`<span class="fire">🔥 ${q.st} seguidas</span>`:''}</div>
     <div class="qtext">${esc(p.enunciado)}</div>
     ${p.ops.map((o,j)=>`<button class="opt ${cls(j)}" ${est&&fb?'disabled':''} onclick="elegir(${j})"><span class="l">${L[j]}</span><span>${esc(o)}</span></button>`).join('')}
-    ${est&&fb&&fb.explicacion?`<div class="expl">💡 ${esc(fb.explicacion)}</div>`:''}
+    ${est&&fb&&fb.explicacion?`<div class="expl">💡 ${expl(fb.explicacion)}</div>`:''}
     <div class="row" style="margin-top:20px"><button class="btn" ${q.i?'':'disabled'} onclick="ir(${q.i-1})">← Anterior</button>
      ${!est&&m!=null?'<button class="btn" onclick="elegir('+m+')">Borrar respuesta</button>':''}<span class="sp"></span>
      ${q.i<q.qs.length-1?`<button class="btn pri" onclick="ir(${q.i+1})">Siguiente →</button>`:`<button class="btn pri" onclick="terminar()">Terminar y corregir</button>`}</div>
@@ -260,7 +297,7 @@ function vQuiz(){
 function ir(k){const q=S.q;if(k<0||k>=q.qs.length)return;q.i=k;$('#main').innerHTML=vQuiz();tick()}
 async function elegir(j){
   const q=S.q,i=q.i;if(!q)return;
-  if(q.modo==='estudio'){if(q.fb[i])return;q.resp[i]=j;q.fb[i]=await api('answer',{sid:q.sid,i,marca:j})}
+  if(q.modo==='estudio'){if(q.fb[i])return;q.resp[i]=j;q.fb[i]=await api('answer',{sid:q.sid,i,marca:j});q.st=q.fb[i].cor===j?(q.st||0)+1:0;if(q.st&&q.st%5===0)window.EST?.confeti?.()}
   else q.resp[i]=q.resp[i]===j?null:j;
   if(S.q===q){$('#main').innerHTML=vQuiz();tick()}
 }
@@ -284,8 +321,10 @@ function vRes(r,recien){
   const s=r.sesion,ex=S.info?.examen||{puntos_maximos:20,puntos_aprobado:10};
   const por={};r.detalle.forEach(d=>{const t=por[d.tema]??={ac:0,er:0,bl:0};d.marca==null?t.bl++:d.marca===d.cor?t.ac++:t.er++});
   return`<h1>${recien?'Resultado':'Detalle del intento'}</h1><p class="sub">${esc(s.tipo)} · ${fecha(s.fecha)}${s.minutos!=null?' · '+s.minutos+' min':''}</p>
-  <div class="card"><div class="hero"><div><div class="score ${s.apto?'good':'bad'}">${s.nota}<small> / ${ex.puntos_maximos}</small></div><span class="tag ${s.apto?'good':'bad'}">${s.apto?'APTO':'NO APTO'}</span></div>
-   <div class="grid g4" style="flex:1;min-width:280px">${kpi('Aciertos',`<span class="good">${s.aciertos}</span>`,s.pct+' % del total')}${kpi('Errores',`<span class="bad">${s.errores}</span>`,'')}${kpi('En blanco',s.blancos,'')}</div></div></div>
+  <div class="card"><div class="hero"><div><div class="score" style="--sc1:${s.nota>=12?'#16a34a':s.apto?'#d97706':'#dc2626'};--sc2:${s.nota>=12?'#0d9488':s.apto?'#f59e0b':'#db2777'}">${s.nota}<small> / ${ex.puntos_maximos}</small></div><span class="tag ${s.apto?'good':'bad'}">${s.nota>=12?'APTO · CONSERVAS NOTA':s.apto?'APTO':'NO APTO'}</span></div>
+   <div class="grid g4" style="flex:1;min-width:280px">${kpi('Aciertos',`<span class="good">${s.aciertos}</span>`,s.pct+' % del total')}${kpi('Errores',`<span class="bad">${s.errores}</span>`,'')}${kpi('En blanco',s.blancos,'no penalizan')}${kpi('Netas',+(s.aciertos-s.errores/3).toFixed(2),'aciertos − errores/3')}</div></div>
+   <div class="meter"><span class="tk up" style="left:50%">10 · aprobado</span><span class="tk up" style="left:60%">12 · conservas nota</span><span class="mk" style="left:${Math.min(100,100*s.nota/ex.puntos_maximos)}%"></span><span class="tk" style="left:${Math.min(96,Math.max(4,100*s.nota/ex.puntos_maximos))}%"><b>tú: ${s.nota}</b></span></div>
+   <p class="sub" style="margin:0">${s.errores?`Los ${s.errores} errores te han restado ${(s.errores/3*ex.puntos_maximos/Math.max(1,s.n)).toFixed(2)} puntos. `:''}${s.blancos?`Si hubieras acertado la mitad de las ${s.blancos} en blanco (y fallado la otra mitad), sumarías ${(s.blancos/2*(1-1/3)*ex.puntos_maximos/Math.max(1,s.n)).toFixed(2)} puntos más: con 4 opciones, arriesgar compensa si descartas al menos una.`:''}</p></div>
   ${Object.keys(por).length>1?`<div class="card mt"><h2>Por tema</h2>${Object.entries(por).sort().map(([t,d])=>{const n=d.ac+d.er+d.bl,p=Math.round(100*d.ac/n);return`<div class="row" style="margin-bottom:8px"><b style="width:70px">${t}</b><div style="flex:1">${bar(p)}</div><span style="width:150px;text-align:right;color:var(--mut)">${d.ac} ✓ · ${d.er} ✗ · ${d.bl} –</span></div>`}).join('')}</div>`:''}
   <div class="row mt"><h2 style="margin:0">Revisión</h2><span class="sp"></span><div class="row" id="rf"></div></div><div id="rev" class="mt"></div>
   <div class="row mt"><button class="btn pri" onclick="go('nuevo')">Nuevo test</button><button class="btn" onclick="go('panel')">Ir al panel</button><button class="btn" onclick="go('hist')">Historial</button></div>`;
@@ -297,11 +336,11 @@ function renderRev(){
   if(!det.length){$('#rev').innerHTML='<div class="empty card">Este intento viene del historial antiguo (sin detalle de preguntas).</div>';return}
   $('#rf').innerHTML=[['all','Todas'],['ko','Errores'],['bl','En blanco'],['ok','Aciertos']].map(([k,t])=>`<button class="chip ${f===k?'on':''}" onclick="S.rf='${k}';renderRev()">${t} <small>${cnt[k]}</small></button>`).join('');
   $('#rev').innerHTML=det.map((d,i)=>({d,i})).filter(({d})=>f==='all'||estado(d)===f).map(({d,i})=>`<div class="rev ${estado(d)}">
-   <div class="row"><span class="badge">#${i+1}</span><span class="badge">${d.tema}${d.pagina?' · pág. '+d.pagina:''}</span></div>
+   <div class="row"><span class="badge">#${i+1}</span><span class="badge tb" style="--c:${bcol(d.tema)}">${d.tema}${d.pagina?' · pág. '+d.pagina:''}</span></div>
    <div style="font-weight:600;margin:8px 0">${esc(d.enunciado)}</div>
    ${d.ops.map((o,j)=>`<div class="o ${j===d.cor?'c':j===d.marca?'w':''}">${L[j]}) ${esc(o)}${j===d.cor?' ✓':j===d.marca?' ✗ tu respuesta':''}</div>`).join('')}
    ${d.marca==null?'<div style="color:var(--mid);margin-top:6px;font-size:13px">Sin responder</div>':''}
-   ${d.expl?`<div class="expl" style="margin-top:10px">💡 ${esc(d.expl)}</div>`:''}</div>`).join('')||'<div class="empty">Nada que mostrar con este filtro.</div>';
+   ${d.expl?`<div class="expl" style="margin-top:10px">💡 ${expl(d.expl)}</div>`:''}</div>`).join('')||'<div class="empty">Nada que mostrar con este filtro.</div>';
 }
 
 /* ---------- historial ---------- */
@@ -323,8 +362,8 @@ async function vBanco(){
   const [info,st]=await Promise.all([api('info'),api('stats')]);$('#foot').textContent=`${info.total} preguntas en el banco`;
   return`<h1>Banco de preguntas</h1><p class="sub">${info.total} preguntas válidas importadas. Para añadir o actualizar ficheros .json usa «Sincronizar».</p>
   <div class="grid g4">${Object.entries(info.bloques).map(([k,b])=>{const p=Math.min(100,Math.round(100*b.n/b.preguntas_examen));
-    return`<div class="card kpi"><div class="kl">${esc(b.nombre)}</div><div class="kv">${b.n}</div><div class="ks">${b.temas}</div><div style="margin:8px 0 4px">${bar(p,'')}</div><div class="ks">${b.n<b.preguntas_examen?`faltan ≥${b.preguntas_examen-b.n} para el simulacro`:'cubre el simulacro'}</div></div>`}).join('')}</div>
-  <div class="card mt"><h2>Temas</h2><div class="tiles">${info.temas.map(t=>`<button class="tile ${t.n?'has':''}" ${t.n?`onclick="practicar('${t.t}')"`:'disabled'} title="${t.t}: ${t.n} preguntas">${+t.t.slice(-2)}</button>`).join('')}</div>
+    return`<div class="card kpi" style="--c:${BC[k]}"><div class="kl">${esc(b.nombre)}</div><div class="kv">${b.n}</div><div class="ks">${b.temas}</div><div style="margin:8px 0 4px"><div class="bar bq"><i style="width:${p}%"></i></div></div><div class="ks">${b.n<b.preguntas_examen?`faltan ≥${b.preguntas_examen-b.n} para el simulacro`:'cubre el simulacro'}</div></div>`}).join('')}</div>
+  <div class="card mt"><h2>Temas</h2>${Object.keys(BC).map(bk=>`<div class="tgrp" style="--c:${BC[bk]}"><small>${esc(info.bloques[bk]?.nombre||bk)}</small><div class="tiles">${info.temas.filter(t=>t.bloque===bk).map(t=>`<button class="tile ${t.n?'has':''}" ${t.n?`onclick="practicar('${t.t}')"`:'disabled'} title="${t.t}: ${t.n} preguntas">${+t.t.slice(-2)}</button>`).join('')}</div></div>`).join('')}
    <div class="legend"><span>Cada casilla es un tema; pulsa uno con preguntas para practicarlo.</span></div></div>
   <div class="card mt"><h2>Validación</h2>${info.avisos.length?`<p class="bad">${info.avisos.length} problema(s):</p><ul>${info.avisos.slice(0,50).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:'<p class="good">✓ Todo el banco es correcto.</p>'}</div>`;
 }
