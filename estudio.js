@@ -398,6 +398,10 @@ window.EST={
  zoom(el){const i=el.querySelector('img');if(!i)return;const d=document.createElement('div');d.className='zoom';d.innerHTML=`<img src="${i.src}">`;d.onclick=()=>d.remove();document.body.appendChild(d)},
  cfg(){Z().rev.cfg={examen:$$('#ex').value,nuevas:Math.max(0,+$$('#nu').value||0),meta:Math.max(10,+$$('#me').value||60),fs:+$$('#fs').value||17,ts:Date.now()};save();RR()},
  /* tarjeta-resumen para el Panel */
+ /* progreso de estudio por tema, para el Panel: parte completada = 1, empezada = ½ */
+ progreso(){if(!(QZ.Z&&QZ.Z.rev))return{};const S0=estado(),o={};for(const t of temario()){const cs=t.partes.flatMap(p=>p.cards),fin=t.partes.filter(p=>S0.fin[t.tema+':'+p.id]).length,
+  emp=t.partes.filter(p=>S0.act[t.tema+':'+p.id]&&!S0.fin[t.tema+':'+p.id]).length;
+  o[t.tema]={partes:t.partes.length,fin,emp,pct:t.partes.length?Math.round(100*(fin+emp/2)/t.partes.length):0,cards:cs.length,dom:cs.filter(c=>niv(S0.E[c.cid])==2).length,vistas:cs.filter(c=>S0.E[c.cid]).length}}return o},
  resumen(){if(!(QZ.Z&&QZ.Z.rev))return'';const T=temario();if(!T.length)return'';const S0=estado(),{due,nw}=pendientes(S0),sig=siguiente(S0),ex=exam(),now=Date.now();
   return`<div class="card mt" style="border:2px solid #7c3aed55"><div class=row><h2 style="margin:0">🧠 Misión de hoy</h2><span class=sp></span><span class=badge>🔥 ${S0.racha} ${S0.racha==1?'día':'días'}</span><span class=badge>${S0.hoy}/${cfgs().meta||60} XP hoy</span>${ex>now?`<span class=badge>${Math.ceil((ex-now)/DAY)} días para el examen</span>`:''}</div>
   <p style="margin:10px 0">${due.length+nw.length?`<b>${due.length+nw.length}</b> tarjetas pendientes`:'Tarjetas al día'}${sig?` · siguiente parte: <b>${esc(sig.tema)} · ${esc(sig.titulo)}</b>`:''}</p><button class="btn pri" onclick="go('estudio')">Empezar a estudiar ▶</button></div>`}};

@@ -123,6 +123,11 @@ body.dk .meter{background:linear-gradient(90deg,#4c1d1d 0 50%,#4a3a0c 50% 60%,#1
 .meter .tk.up{top:-20px}
 .hero .score{background:linear-gradient(135deg,var(--sc1),var(--sc2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .rev.ok{border-left-color:#16a34a}.rev{border-left-width:5px}
+.prep{display:grid;gap:4px;margin-top:12px}.prow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}
+.prow .ks{color:var(--mut);font-size:12px}.dbar{display:flex;align-items:center;gap:8px}.dbar .bar{height:10px}
+@media(max-width:760px){.prow{grid-template-columns:1fr}}
+.tile.tl2{position:relative;overflow:hidden}.tile .sbar{position:absolute;left:0;bottom:0;height:5px;background:#7c3aed;border-radius:0 3px 0 0}
+.tile.st:not(.has){border-style:solid;border-color:#7c3aed66;color:#7c3aed}.tile .ck2{position:absolute;top:1px;right:3px;font-size:9px;color:#7c3aed}
 </style>
 </head>
 <body>
@@ -209,26 +214,37 @@ async function vPanel(){
   $('#foot').textContent=`${info.total} preguntas en el banco`;
   const ult=st.sesiones.slice(-5).reverse();
   const reforzar=st.por_tema.filter(t=>t.ac+t.fa>=3).sort((a,b)=>a.pct-b.pct).slice(0,5);
-  return`<h1>Panel</h1><p class="sub">Tu progreso de un vistazo.</p>
+  const PR=window.EST?.progreso?.()||{},sp=t=>PR[t]?.pct||0,ex=info.examen;
+  const blq=Object.keys(BC).map(bk=>{const ts=st.por_tema.filter(t=>t.bloque===bk),b=st.por_bloque.find(x=>x.bloque===bk)||{};
+    return{bk,nombre:info.bloques[bk]?.nombre||bk,peso:info.bloques[bk]?.preguntas_examen||0,n:ts.length,est:ts.length?ts.reduce((a,t)=>a+sp(t.tema),0)/ts.length:0,
+     conEst:ts.filter(t=>PR[t.tema]).length,conPreg:ts.filter(t=>t.n).length,pct:b.pct,vistas:b.vistas||0,np:b.n||0}});
+  const totT=st.por_tema.length||1,estGlobal=st.por_tema.reduce((a,t)=>a+sp(t.tema),0)/totT,
+    pesoT=blq.reduce((a,b)=>a+b.peso,0)||1,estPond=blq.reduce((a,b)=>a+b.est*b.peso,0)/pesoT,f1=x=>x>0&&x<10?x.toFixed(1).replace('.',','):Math.round(x);
+  const dbar=(p,c,ico,txt)=>`<div class="dbar" title="${txt}"><span>${ico}</span><div class="bar" style="flex:1"><i style="width:${p||0}%;background:${c}"></i></div><b style="min-width:42px;text-align:right">${p==null?'–':f1(p)+'%'}</b></div>`;
+  const pend=[...st.por_tema.filter(t=>PR[t.tema]&&sp(t.tema)>=50&&!(t.ac+t.fa)&&t.n).map(t=>({t:t.tema,m:'estudiado, sin practicar',a:`practicar('${t.tema}')`,b:'Practicar'})),
+    ...st.por_tema.filter(t=>t.ac+t.fa>=3&&t.pct<60&&PR[t.tema]&&sp(t.tema)<100).map(t=>({t:t.tema,m:`${t.pct}% de acierto · estudio al ${sp(t.tema)}%`,a:`go('estudio');EST.tema('${t.tema}')`,b:'Estudiar'}))].slice(0,4);
+  return`<h1>Panel</h1><p class="sub">Lo que has estudiado y lo que aciertas, de un vistazo.</p>
   <div class="grid g4">
-   ${kpi('Tests realizados',st.sesiones.length,st.sesiones.length?'último: '+fecha(st.sesiones.at(-1).fecha):'todavía ninguno','📝','#2563eb')}
-   ${kpi('% de acierto',st.pct_global==null?'–':`<span class="${cl(st.pct_global)}">${st.pct_global}%</span>`,'media de todos los intentos','🎯','#0d9488')}
-   ${kpi('Nota media',st.nota_media5==null?'–':`<span class="${st.nota_media5>=12?'good':st.nota_media5>=10?'mid':'bad'}">${st.nota_media5}</span>`,`últimos 5 · aprobado ${info.examen.puntos_aprobado} · conservas nota con 12`,'🏅','#7c3aed')}
-   ${kpi('Racha',st.racha+(st.racha===1?' día':' días'),'días seguidos estudiando','🔥','#ea580c')}
-   ${kpi('Preguntas falladas',st.falladas,`${st.dominadas} dominadas · repásalas en «Mis falladas»`,'🩹','#db2777')}
+   ${kpi('Temario estudiado',`<span style="color:#7c3aed">${f1(estGlobal)}%</span>`,`ponderado por el examen: ${f1(estPond)}%`,'📖','#7c3aed')}
+   ${kpi('% de acierto',st.pct_global==null?'–':`<span class="${cl(st.pct_global)}">${st.pct_global}%</span>`,`${st.sesiones.length} ${st.sesiones.length==1?'test':'tests'} · ${st.falladas} ${st.falladas==1?'fallada pendiente':'falladas pendientes'}`,'🎯','#0d9488')}
+   ${kpi('Nota media',st.nota_media5==null?'–':`<span class="${st.nota_media5>=12?'good':st.nota_media5>=10?'mid':'bad'}">${st.nota_media5}</span>`,`últimos 5 · aprobado ${ex.puntos_aprobado} · conservas nota con 12`,'🏅','#2563eb')}
+   ${kpi('Racha',st.racha+(st.racha===1?' día':' días'),'días seguidos con tests','🔥','#ea580c')}
   </div>
   ${window.EST?.resumen?.()||''}
+  <div class="card mt"><div class="row"><h2 style="margin:0">🧭 Tu preparación por bloque</h2><span class="sp"></span><span class="legend" style="margin:0"><span>📖 estudiado</span><span>🎯 acierto en tests</span></span></div>
+   <div class="prep">${blq.map(b=>`<div class="prow" style="--c:${BC[b.bk]}"><div><b class="bq">● ${esc(b.nombre)}</b><div class="ks">📝 ${b.peso} preguntas en el examen · ${b.conEst}/${b.n} temas con estudio · ${b.conPreg}/${b.n} con preguntas</div></div>
+    ${dbar(b.est,'#7c3aed','📖','temario estudiado del bloque')}${dbar(b.pct,b.pct==null?'var(--bd)':b.pct>=70?'#16a34a':b.pct>=50?'#d97706':'#dc2626','🎯',`${b.vistas}/${b.np} preguntas vistas`)}</div>`).join('')}</div></div>
+  <div class="card mt"><h2>🗺️ Mapa de temas</h2>${Object.keys(BC).map(bk=>`<div class="tgrp" style="--c:${BC[bk]}"><small>${esc(info.bloques[bk]?.nombre||bk)}</small><div class="tiles">${st.por_tema.filter(t=>t.bloque===bk).map(t=>{const c=t.n?(t.pct==null?'has':'has '+cl(t.pct)):'',e=PR[t.tema],ok=e&&e.pct>=100;
+     return`<button class="tile tl2 ${c} ${e?'st':''}" ${t.n||e?`onclick="${t.n?`practicar('${t.tema}')`:`go('estudio');EST.tema('${t.tema}')`}"`:'disabled'} title="${t.tema} · ${e?'estudiado '+e.pct+'%':'sin estudio'} · ${t.n} preguntas${t.pct==null?'':' · '+t.pct+'% acierto'}">${ok?'<span class="ck2">✓</span>':''}${+t.tema.slice(-2)}${e?`<i class="sbar" style="width:${Math.max(e.pct,6)}%"></i>`:''}</button>`}).join('')}</div></div>`).join('')}
+     <div class="legend"><span><b style="background:var(--goodbg);border:1px solid var(--good)"></b>acierto ≥70 %</span><span><b style="background:var(--midbg);border:1px solid var(--mid)"></b>50–69 %</span><span><b style="background:var(--badbg);border:1px solid var(--bad)"></b>&lt;50 %</span><span><b style="background:linear-gradient(0deg,#7c3aed 0 30%,transparent 30%);border:1px solid var(--bd)"></b>barra violeta = estudiado</span><span>✓ tema estudiado entero</span><span><b style="border:1px dashed var(--bd)"></b>sin nada aún</span></div></div>
   <div class="grid g2 mt">
    <div class="card"><div class="row"><h2 style="margin:0">Evolución por intento</h2><span class="sp"></span>
      <div class="seg"><button data-ck="pct" class="${S.ck==='pct'?'on':''}" onclick="setCk('pct')">% acierto</button><button data-ck="nota" class="${S.ck==='nota'?'on':''}" onclick="setCk('nota')">Nota</button></div></div>
      <div id="chart" class="mt">${chart(st.sesiones,S.ck,st.apr)}</div></div>
-   <div class="card"><h2>Por bloque</h2>${st.por_bloque.map(b=>`<div style="margin-bottom:14px;--c:${BC[b.bloque]}"><div class="row"><b><span class="bq">●</span> ${esc(b.nombre)}</b><span class="sp"></span><span class="${cl(b.pct)}"><b>${b.pct==null?'–':b.pct+'%'}</b></span></div><div class="bar bq"><i style="width:${b.pct||0}%"></i></div><div class="ks" style="color:var(--mut);font-size:12px">${b.vistas}/${b.n} preguntas vistas · 📝 ${info.bloques[b.bloque]?.preguntas_examen??'?'} en el examen</div></div>`).join('')}</div>
-  </div>
-  <div class="grid g2 mt">
-   <div class="card"><h2>Mapa de temas</h2>${Object.keys(BC).map(bk=>`<div class="tgrp" style="--c:${BC[bk]}"><small>${esc(info.bloques[bk]?.nombre||bk)}</small><div class="tiles">${st.por_tema.filter(t=>t.bloque===bk).map(t=>{const c=t.n?(t.pct==null?'has':'has '+cl(t.pct)):'';
-     return`<button class="tile ${c}" ${t.n?`onclick="practicar('${t.tema}')"`:'disabled'} title="${t.tema} · ${t.n} preguntas${t.pct==null?'':' · '+t.pct+'% acierto'}">${+t.tema.slice(-2)}</button>`}).join('')}</div></div>`).join('')}
-     <div class="legend"><span><b style="background:var(--goodbg);border:1px solid var(--good)"></b>≥70 %</span><span><b style="background:var(--midbg);border:1px solid var(--mid)"></b>50–69 %</span><span><b style="background:var(--badbg);border:1px solid var(--bad)"></b>&lt;50 %</span><span><b style="background:var(--bg);border:1px solid var(--bd)"></b>sin intentos</span><span><b style="border:1px dashed var(--bd)"></b>sin preguntas</span></div></div>
-   <div class="card"><h2>Temas a reforzar</h2>${reforzar.length?reforzar.map(t=>`<div class="row" style="margin-bottom:10px"><b style="width:64px">${t.tema}</b><div style="flex:1">${bar(t.pct)}</div><b class="${cl(t.pct)}" style="width:44px;text-align:right">${t.pct}%</b><button class="btn" style="padding:3px 10px" onclick="practicar('${t.tema}')">Practicar</button></div>`).join(''):'<div class="empty">Cuando respondas al menos 3 preguntas de un tema aparecerán aquí los más flojos.</div>'}</div>
+   <div class="card"><h2>🎯 Qué hacer ahora</h2>
+     ${pend.map(x=>`<div class="row" style="margin-bottom:10px"><b style="width:64px;color:${bcol(x.t)}">${x.t}</b><span style="flex:1;color:var(--mut);font-size:13px">${x.m}</span><button class="btn" style="padding:3px 10px" onclick="${x.a}">${x.b}</button></div>`).join('')}
+     ${reforzar.length?`<div class="ks" style="margin:${pend.length?'14px':'0'} 0 8px;font-weight:700">Temas con menos acierto</div>`+reforzar.map(t=>`<div class="row" style="margin-bottom:10px"><b style="width:64px;color:${bcol(t.tema)}">${t.tema}</b><div style="flex:1">${bar(t.pct)}</div><b class="${cl(t.pct)}" style="width:44px;text-align:right">${t.pct}%</b><button class="btn" style="padding:3px 10px" onclick="practicar('${t.tema}')">Practicar</button></div>`).join(''):''}
+     ${!pend.length&&!reforzar.length?'<div class="empty">Cuando estudies y hagas tests aparecerán aquí tus prioridades: temas estudiados sin practicar y temas flojos.</div>':''}</div>
   </div>
   <div class="card mt"><h2>Últimos intentos</h2>${ult.length?tablaSes(ult):'<div class="empty">Sin intentos todavía.</div>'}</div>`;
 }
