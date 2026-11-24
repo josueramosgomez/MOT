@@ -8,7 +8,7 @@ let tok=null;
 const DB=new Promise((ok,ko)=>{const r=indexedDB.open('quiz',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=ko});
 const kget=async k=>{const d=await DB;return new Promise(ok=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result)})};
 const kset=async(k,v)=>{const d=await DB;return new Promise(ok=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok})};
-const guardar=()=>Promise.all(['set','banco','config','mine','otros','dirty'].map(k=>kset(k,Z[k])));
+const guardar=()=>Promise.all(['set','banco','config','mine','otros','dirty','est','rev','revOtros'].map(k=>kset(k,Z[k])));
 // ---------- utilidades (mismas reglas que app.py)
 const norm=t=>String(t).normalize('NFKD').replace(/[^\x00-\x7f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 const codTema=t=>{t=String(t).trim().toUpperCase().replace(/_/g,'-').replace(/ /g,'-');const m=t.match(/^(COM|ESP)?-?(\d{1,2})$/);return m?`${m[1]||'ESP'}-${String(+m[2]).padStart(2,'0')}`:t};
@@ -90,15 +90,16 @@ async function subir(fid,name,text,lst){const ex=lst.find(f=>f.name==name),fd=ne
 async function sync(){if(!tok){if(!Z.set.clientId)throw Err('Falta el ID de cliente de Google');await gsi();
   await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:limpia(Z.set.clientId),scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(Err(r.error||'Acceso denegado'))}).requestAccessToken({prompt:'select_account'}))}
  try{const fid=await carpeta(),lst=(await dapi(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files,mio='hist-'+Z.set.dev+'.json';
-  for(const f of lst){if(f.name==mio||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
-   if(f.name.startsWith('banco-'))Z.banco[f.name.slice(6)]=t;else if(f.name=='config.json')Z.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))Z.otros[f.name]=JSON.parse(t)}
-  for(const n of Object.keys(Z.dirty))await subir(fid,n,n=='config.json'?JSON.stringify(Z.config):Z.banco[n.slice(6)],lst);
-  await subir(fid,mio,JSON.stringify(Z.mine),lst);Z.dirty={};await recargar();await guardar()}
+  for(const f of lst){if(f.name==mio||f.name=='rev-'+Z.set.dev+'.json'||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
+   if(f.name.startsWith('banco-'))Z.banco[f.name.slice(6)]=t;else if(f.name=='config.json')Z.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))Z.otros[f.name]=JSON.parse(t);else if(f.name.startsWith('est-'))Z.est[f.name.slice(4)]=t;else if(/^rev-.*\.json$/.test(f.name))Z.revOtros[f.name]=JSON.parse(t)}
+  for(const n of Object.keys(Z.dirty))await subir(fid,n,n=='config.json'?JSON.stringify(Z.config):n.startsWith('est-')?Z.est[n.slice(4)]:Z.banco[n.slice(6)],lst);
+  await subir(fid,mio,JSON.stringify(Z.mine),lst);await subir(fid,'rev-'+Z.set.dev+'.json',JSON.stringify(Z.rev),lst);Z.dirty={};await recargar();await guardar()}
  catch(e){if(/Drive 401/.test(e.message))tok=null;throw e}}
 async function importar(files){const m=[];for(const f of files){const t=await f.text();let j;try{j=JSON.parse(t)}catch{m.push(f.name+': JSON no valido');continue}
  if(j&&!Array.isArray(j)&&(Array.isArray(j.sesiones)||(j.preguntas&&!Array.isArray(j.preguntas)))){const ids=new Set(Z.mine.sesiones.map(s=>s.id));
   for(const s of j.sesiones||[]){s.id=s.id||'old-'+s.fecha+'|'+s.tipo;if(!ids.has(s.id)){ids.add(s.id);Z.mine.sesiones.push(s)}}
   for(const[id,v]of Object.entries(j.preguntas||{}))Z.mine.base[id]=v;m.push(f.name+': historial importado')}
+ else if(j&&!Array.isArray(j)&&Array.isArray(j.partes)){Z.est[f.name]=t;Z.dirty['est-'+f.name]=1;m.push(f.name+': estudio')}
  else if(j&&j.bloques&&j.examen){Z.config=j;Z.dirty['config.json']=1;m.push(f.name+': configuracion')}
  else{Z.banco[f.name]=t;Z.dirty['banco-'+f.name]=1;m.push(f.name+': banco')}}
  await recargar();await guardar();return m.join('\n')}
@@ -122,7 +123,8 @@ window.QZ={vacio:()=>!Z.pregs.length,cid:v=>{Z.set.clientId=limpia(v);guardar();
 // ---------- arranque
 const ready=(async()=>{Z.set=await kget('set')||{dev:Math.random().toString(36).slice(2,8)};Z.banco=await kget('banco')||{};Z.config=await kget('config')||CFG0;
  Z.mine=await kget('mine')||{dev:Z.set.dev,sesiones:[],base:{}};Z.otros=await kget('otros')||{};Z.dirty=await kget('dirty')||{};Z.msg='';
+ Z.est=await kget('est')||{};Z.rev=await kget('rev')||{dev:Z.set.dev,log:[],notas:{},cfg:null};Z.revOtros=await kget('revOtros')||{};
  await guardar();await recargar()})();
-window.QZ.ready=ready;
+window.QZ.ready=ready;window.QZ.Z=Z;window.QZ.guardar=guardar;window.QZ.bg=()=>{if(tok)sync().catch(()=>{})};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 })();

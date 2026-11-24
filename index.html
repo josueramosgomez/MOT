@@ -102,6 +102,7 @@ main{padding:16px 14px calc(86px + env(safe-area-inset-bottom))}body.focus main{
     <button class="nav" data-v="panel" onclick="go('panel')">📊&nbsp; Panel</button>
     <button class="nav" data-v="nuevo" onclick="go('nuevo')">✍️&nbsp; Nuevo test</button>
     <button class="nav" data-v="hist" onclick="go('hist')">🗂️&nbsp; Historial</button>
+    <button class="nav" data-v="estudio" onclick="go('estudio')">🧠&nbsp; Estudiar</button>
     <button class="nav" data-v="banco" onclick="go('banco')">📚&nbsp; Banco</button>
     <button class="nav" data-v="sync" onclick="go('sync')">☁️&nbsp; Sincronizar</button>
     <div class="side-foot" id="foot"></div>
@@ -109,6 +110,7 @@ main{padding:16px 14px calc(86px + env(safe-area-inset-bottom))}body.focus main{
   <main id="main"></main>
 </div>
 <script src="core.js"></script>
+<script src="estudio.js"></script>
 <script>
 const $=s=>document.querySelector(s), L='ABCD';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -135,6 +137,7 @@ async function render(arg){
     else if(S.view==='hist')m.innerHTML=await vHist();
     else if(S.view==='banco')m.innerHTML=await vBanco();
     else if(S.view==='sync')m.innerHTML=vSync();
+    else if(S.view==='estudio')m.innerHTML=vEstudio();
     else if(S.view==='quiz')m.innerHTML=vQuiz();
     else if(S.view==='res')m.innerHTML=vRes(S.res,true);
     else if(S.view==='det'){const r=await api('sesion?i='+arg);S.res=r;m.innerHTML=vRes(r,false)}
