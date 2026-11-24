@@ -224,6 +224,7 @@ ${T.length?T.map(t=>{const cc=t.partes.flatMap(p=>p.cards),nf=t.partes.filter(p=
  <label>Meta diaria (XP) <input type=number id=me min=10 max=500 step=10 value="${meta}" style="width:80px" onchange="EST.cfg()"></label>
  <label>Letra <select id=fs onchange="EST.cfg()">${[['15','Pequeña'],['17','Normal'],['19','Grande'],['21','Muy grande']].map(([v,n])=>`<option value=${v} ${String(c.fs||17)==v?'selected':''}>${n}</option>`).join('')}</select></label></div>
  <p class=sub style="margin:10px 0 0">${cs.length} tarjetas en total. Con fecha de examen, ningún repaso se programa más allá de la mitad del tiempo que queda.</p>
+ ${archivos()}
  <div class=row style="margin-top:8px"><button class=btn onclick="EST.foco(15)">🍅 Bloque de foco 15 min</button><button class=btn onclick="EST.foco(25)">🍅 25 min</button></div></details></div>`}
 
 function vTema(){katexOn();const t=tema(ST.t);if(!t)return home();const S0=estado(),tot=t.partes.reduce((a,p)=>a+p.examen,0);
@@ -306,6 +307,12 @@ function vSes(){const q=ST.q;
  :c.vf!=null?`<div class=vfb><button class="btn" style="border-color:var(--good);color:var(--good)" onclick="EST.vf(0)">✓ Verdadero</button><button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="EST.vf(1)">✗ Falso</button></div><p class=kbd><kbd>V</kbd> / <kbd>F</kbd></p>`
  :`<button class="btn pri bigbtn" onclick="EST.m()">Mostrar respuesta</button><p class=kbd><kbd>Espacio</kbd> mostrar</p>`}</div>`}
 
+/* ---------- archivos de estudio cargados (para borrar los antiguos) ---------- */
+function archivos(){const est=Z().est||{},ks=Object.keys(est).sort();if(!ks.length)return'';
+ return`<h2 style="margin:16px 0 6px">📂 Archivos de estudio cargados</h2><p class=sub style="margin:0 0 8px">Al borrar uno se quita de este dispositivo y, al sincronizar, también de Drive y de tus otros dispositivos. El progreso de sus tarjetas se pierde.</p>
+ <table class=tb><tbody>${ks.map(n=>{let j={};try{j=JSON.parse(est[n])}catch{}const v2=(j.partes||[]).some(p=>p.pildoras);
+  return`<tr><td><b>${esc(j.tema||'?')}</b> ${esc(j.titulo||'')}<br><small style="color:var(--mut)">${esc(n)} · ${(j.partes||[]).length} partes</small></td><td><span class="pill ${v2?'gn':'am'}">${v2?'formato nuevo':'formato antiguo'}</span></td><td style="text-align:right"><button class=btn onclick="EST.borra(${esc(JSON.stringify(n))})">🗑 Borrar</button></td></tr>`}).join('')}</tbody></table>`}
+
 /* ---------- chuleta del tema ---------- */
 function vChul(){katexOn();const t=tema(ST.t);if(!t)return home();
  return`<div class=es><p><button class=btn onclick="EST.tema('${t.tema}')">◀ ${esc(t.tema)}</button></p><h1>📋 Chuleta · ${esc(t.tema)}</h1><p class=sub>Todo lo memorizable del tema en una pantalla: fórmulas, claves, trucos y trampas. Ideal para el último repaso.</p>
@@ -360,6 +367,7 @@ window.EST={
   G.fx=ok?'fl-ok':'fl-ko';G.i++;RR()},
  foco(m){FOCO={fin:Date.now()+m*MIN};focoTick();tst(`🍅 ${m} minutos de foco. Móvil lejos, una sola cosa.`);RR()},
  confeti,
+ async borra(n){if(!confirm('¿Borrar «'+n+'» de todos tus dispositivos? Se pierde el progreso de sus tarjetas.'))return;await QZ.borrarEst(n);CACHE.sig='';tst('Borrado. Pulsa «Conectar y sincronizar» para quitarlo también de Drive.');RR()},
  zoom(el){const i=el.querySelector('img');if(!i)return;const d=document.createElement('div');d.className='zoom';d.innerHTML=`<img src="${i.src}">`;d.onclick=()=>d.remove();document.body.appendChild(d)},
  cfg(){Z().rev.cfg={examen:$$('#ex').value,nuevas:Math.max(0,+$$('#nu').value||0),meta:Math.max(10,+$$('#me').value||60),fs:+$$('#fs').value||17,ts:Date.now()};save();RR()},
  /* tarjeta-resumen para el Panel */

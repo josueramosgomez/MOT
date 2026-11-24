@@ -8,7 +8,7 @@ let tok=null;
 const DB=new Promise((ok,ko)=>{const r=indexedDB.open('quiz',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=ko});
 const kget=async k=>{const d=await DB;return new Promise(ok=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result)})};
 const kset=async(k,v)=>{const d=await DB;return new Promise(ok=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok})};
-const guardar=()=>Promise.all(['set','banco','config','mine','otros','dirty','est','rev','revOtros'].map(k=>kset(k,Z[k])));
+const guardar=()=>Promise.all(['set','banco','config','mine','otros','dirty','est','rev','revOtros','borr'].map(k=>kset(k,Z[k])));
 // ---------- utilidades (mismas reglas que app.py)
 const norm=t=>String(t).normalize('NFKD').replace(/[^\x00-\x7f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 const codTema=t=>{t=String(t).trim().toUpperCase().replace(/_/g,'-').replace(/ /g,'-');const m=t.match(/^(COM|ESP)?-?(\d{1,2})$/);return m?`${m[1]||'ESP'}-${String(+m[2]).padStart(2,'0')}`:t};
@@ -90,7 +90,10 @@ async function subir(fid,name,text,lst){const ex=lst.find(f=>f.name==name),fd=ne
 async function sync(){if(!tok){if(!Z.set.clientId)throw Err('Falta el ID de cliente de Google');await gsi();
   await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:limpia(Z.set.clientId),scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(Err(r.error||'Acceso denegado'))}).requestAccessToken({prompt:'select_account'}))}
  try{const fid=await carpeta(),lst=(await dapi(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files,mio='hist-'+Z.set.dev+'.json';
-  for(const f of lst){if(f.name==mio||f.name=='rev-'+Z.set.dev+'.json'||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
+  for(const f of lst.filter(f=>Z.borr[f.name]))await dapi(`${D}/${f.id}`,{method:'DELETE',raw:1});
+  const enDrive=new Set(lst.filter(f=>!Z.borr[f.name]).map(f=>f.name));Z.borr={};
+  for(const n of Object.keys(Z.est))if(!enDrive.has('est-'+n)&&!Z.dirty['est-'+n])delete Z.est[n];
+  for(const f of lst){if(!enDrive.has(f.name)||f.name==mio||f.name=='rev-'+Z.set.dev+'.json'||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
    if(f.name.startsWith('banco-'))Z.banco[f.name.slice(6)]=t;else if(f.name=='config.json')Z.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))Z.otros[f.name]=JSON.parse(t);else if(f.name.startsWith('est-'))Z.est[f.name.slice(4)]=t;else if(/^rev-.*\.json$/.test(f.name))Z.revOtros[f.name]=JSON.parse(t)}
   for(const n of Object.keys(Z.dirty))await subir(fid,n,n=='config.json'?JSON.stringify(Z.config):n.startsWith('est-')?Z.est[n.slice(4)]:Z.banco[n.slice(6)],lst);
   await subir(fid,mio,JSON.stringify(Z.mine),lst);await subir(fid,'rev-'+Z.set.dev+'.json',JSON.stringify(Z.rev),lst);Z.dirty={};await recargar();await guardar()}
@@ -123,8 +126,10 @@ window.QZ={vacio:()=>!Z.pregs.length,cid:v=>{Z.set.clientId=limpia(v);guardar();
 // ---------- arranque
 const ready=(async()=>{Z.set=await kget('set')||{dev:Math.random().toString(36).slice(2,8)};Z.banco=await kget('banco')||{};Z.config=await kget('config')||CFG0;
  Z.mine=await kget('mine')||{dev:Z.set.dev,sesiones:[],base:{}};Z.otros=await kget('otros')||{};Z.dirty=await kget('dirty')||{};Z.msg='';
- Z.est=await kget('est')||{};Z.rev=await kget('rev')||{dev:Z.set.dev,log:[],notas:{},cfg:null};Z.revOtros=await kget('revOtros')||{};
+ Z.est=await kget('est')||{};Z.borr=await kget('borr')||{};Z.rev=await kget('rev')||{dev:Z.set.dev,log:[],notas:{},cfg:null};Z.revOtros=await kget('revOtros')||{};
  await guardar();await recargar()})();
-window.QZ.ready=ready;window.QZ.Z=Z;window.QZ.guardar=guardar;window.QZ.bg=()=>{if(tok)sync().catch(()=>{})};
+window.QZ.ready=ready;
+/* borra un archivo de estudio en este dispositivo; en la próxima sincronización se borra de Drive y de los demás dispositivos */
+window.QZ.borrarEst=async n=>{if(!(n in Z.est))return;delete Z.est[n];delete Z.dirty['est-'+n];Z.borr['est-'+n]=1;await guardar();if(tok)sync().catch(()=>{})};window.QZ.Z=Z;window.QZ.guardar=guardar;window.QZ.bg=()=>{if(tok)sync().catch(()=>{})};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 })();
