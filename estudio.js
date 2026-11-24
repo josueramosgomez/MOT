@@ -116,9 +116,12 @@ const plain=s=>String(s??'').replace(/\$\$?([^$]+)\$\$?/g,'$1').replace(/\*\*|==
 
 /* ============ contenido ============ */
 const CAJA={paraque:'🎯 Para qué',idea:'💡 La idea',truco:'🪄 Truco',ojo:'⚠️ Ojo en el examen',recuerda:'📌 Para recordar',mnemo:'🧠 Regla para memorizar',amplia:'➕ Ampliación · ha salido en el examen y no viene en los apuntes',ejemplo:'🔢 Ejemplo con números'};
-let CACHE={sig:'',T:[]};
+let CACHE={sig:'',T:[],ign:new Set()};
+const esV2=j=>(j.partes||[]).some(p=>Array.isArray(p.pildoras));
 function temario(){const est=Z().est||{},sig=Object.entries(est).map(([k,v])=>k+v.length).join('|');if(sig===CACHE.sig)return CACHE.T;const T={};
- for(const[f,t]of Object.entries(est)){let j;try{j=JSON.parse(t)}catch{continue}if(!Array.isArray(j.partes))continue;
+ const js=Object.entries(est).map(([f,t])=>{try{return[f,JSON.parse(t)]}catch{return null}}).filter(x=>x&&Array.isArray(x[1].partes));
+ const nuevos=new Set(js.filter(([f,j])=>esV2(j)).map(([f,j])=>String(j.tema||f).toUpperCase())),ign=new Set();
+ for(const[f,j]of js){if(!esV2(j)&&nuevos.has(String(j.tema||f).toUpperCase())){ign.add(f);continue}
   const k=String(j.tema||f).toUpperCase(),o=T[k]??={tema:k,titulo:j.titulo||'',frase:j.frase||'',esfuerzo:j.esfuerzo||'',partes:[]};
   for(const c of['titulo','frase','esfuerzo'])if(j[c]&&!o[c])o[c]=j[c];
   j.partes.forEach((p,pi)=>{const pid=String(p.id??pi+1).replace(/[^\w.-]/g,'_');let pil=p.pildoras;
@@ -127,7 +130,7 @@ function temario(){const est=Z().est||{},sig=Object.entries(est).map(([k,v])=>k+
    o.partes.push({id:pid,tema:k,titulo:p.titulo||'Parte '+(pi+1),pagina:[].concat(p.pagina??[]),examen:+p.examen||0,estrella:!!p.estrella,paraque:p.paraque||'',
     gancho:p.gancho||null,pildoras:pil,claves:p.claves||[],reto:p.reto||[],
     cards:(p.tarjetas||[]).map((x,i)=>({...x,cid:`${k}:${pid}:${x.id??i}`,tema:k,parte:pid})).filter(c=>c.c||(c.q&&c.a)||c.vf)})})}
- CACHE={sig,T:Object.values(T).sort((a,b)=>cmp(a.tema,b.tema))};return CACHE.T}
+ CACHE={sig,T:Object.values(T).sort((a,b)=>cmp(a.tema,b.tema)),ign};return CACHE.T}
 const tema=t=>temario().find(x=>x.tema==t),part=(t,p)=>tema(t)?.partes.find(x=>x.id==p);
 
 /* ============ configuración, registro y repetición espaciada ============ */
@@ -267,10 +270,11 @@ function vParte(){katexOn();const P=part(ST.t,ST.p);if(!P)return home();const s=
 function preguntasReto(P){const pr=Z().pregs||[],ids=new Set(P.reto);let l=pr.filter(q=>ids.has(q.id));
  /* si el banco se ha editado y faltan ids, se completa con preguntas del tema en las mismas páginas */
  if(l.length<5&&P.pagina.length)l=l.concat(pr.filter(q=>!ids.has(q.id)&&q.tema==P.tema&&P.pagina.includes(+q.pagina)));
+ if(!l.length)l=pr.filter(q=>q.tema==P.tema);
  const S0=estado(),r=S0.reto[P.tema+':'+P.id]||{};l=shuf([...l]).sort((a,b)=>(r[a.id]===true)-(r[b.id]===true));
  return l.slice(0,5).map(q=>{const o=shuf([0,1,2,3]);return{...q,ops:o.map(i=>q.opciones[i]),cor:o.indexOf(q.correcta)}})}
 function vReto(P){if(!ST.R){ST.R={qs:preguntasReto(P),i:0,m:[],t0:Date.now()}}const R0=ST.R;
- if(!R0.qs.length)return`<div class=card><h2>🏆 Reto</h2><p class=t>No hay preguntas del banco para esta parte. Importa el banco del tema (${esc(P.tema)}.json) desde «Sincronizar».</p></div><button class="btn pri bigbtn" onclick="EST.terminar()">Marcar la parte como completada ✓</button></div>`;
+ if(!R0.qs.length)return`<div class=card><h2>🏆 Reto</h2><p class=t>Todavía no hay preguntas de <b>${esc(P.tema)}</b> en tu banco. Importa el banco del tema (${esc(P.tema)}.json) desde «Sincronizar» y el reto se activará solo.</p></div><button class="btn pri bigbtn" onclick="EST.terminar()">Marcar la parte como completada ✓</button></div>`;
  if(R0.i>=R0.qs.length){const ok=R0.m.filter((m,i)=>m==R0.qs[i].cor).length,n=R0.qs.length;
   return`<div class=card style="text-align:center"><div style="font-size:54px">${ok==n?'🏆':ok>=n*.6?'🎯':'💪'}</div><h2 style="font-size:1.4em">${ok}/${n} en el reto</h2>
   <p class=t>${ok==n?'¡Perfecto! Esta parte está lista para el examen.':ok>=n*.6?'¡Muy bien! Las que has fallado ya están en «Mis falladas» para el test.':'Esta parte necesita otra vuelta. Las falladas ya están en «Mis falladas», y las tarjetas volverán pronto.'}</p>
@@ -308,10 +312,10 @@ function vSes(){const q=ST.q;
  :`<button class="btn pri bigbtn" onclick="EST.m()">Mostrar respuesta</button><p class=kbd><kbd>Espacio</kbd> mostrar</p>`}</div>`}
 
 /* ---------- archivos de estudio cargados (para borrar los antiguos) ---------- */
-function archivos(){const est=Z().est||{},ks=Object.keys(est).sort();if(!ks.length)return'';
+function archivos(){temario();const est=Z().est||{},ks=Object.keys(est).sort();if(!ks.length)return'';
  return`<h2 style="margin:16px 0 6px">📂 Archivos de estudio cargados</h2><p class=sub style="margin:0 0 8px">Al borrar uno se quita de este dispositivo y, al sincronizar, también de Drive y de tus otros dispositivos. El progreso de sus tarjetas se pierde.</p>
  <table class=tb><tbody>${ks.map(n=>{let j={};try{j=JSON.parse(est[n])}catch{}const v2=(j.partes||[]).some(p=>p.pildoras);
-  return`<tr><td><b>${esc(j.tema||'?')}</b> ${esc(j.titulo||'')}<br><small style="color:var(--mut)">${esc(n)} · ${(j.partes||[]).length} partes</small></td><td><span class="pill ${v2?'gn':'am'}">${v2?'formato nuevo':'formato antiguo'}</span></td><td style="text-align:right"><button class=btn onclick="EST.borra(${esc(JSON.stringify(n))})">🗑 Borrar</button></td></tr>`}).join('')}</tbody></table>`}
+  return`<tr><td><b>${esc(j.tema||'?')}</b> ${esc(j.titulo||'')}<br><small style="color:var(--mut)">${esc(n)} · ${(j.partes||[]).length} partes</small></td><td><span class="pill ${v2?'gn':'am'}">${v2?'formato nuevo':CACHE.ign.has(n)?'antiguo · no se usa (hay uno nuevo)':'formato antiguo'}</span></td><td style="text-align:right"><button class=btn onclick="EST.borra(${esc(JSON.stringify(n))})">🗑 Borrar</button></td></tr>`}).join('')}</tbody></table>`}
 
 /* ---------- chuleta del tema ---------- */
 function vChul(){katexOn();const t=tema(ST.t);if(!t)return home();
