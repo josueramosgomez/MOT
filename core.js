@@ -87,15 +87,29 @@ async function carpeta(){const r=await dapi(`${D}?q=${encodeURIComponent("name='
  return r.files[0]?.id||(await dapi(D,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'QuizTopografia',mimeType:'application/vnd.google-apps.folder'})})).id}
 async function subir(fid,name,text,lst){const ex=lst.find(f=>f.name==name),fd=new FormData();fd.append('metadata',new Blob([JSON.stringify({name,...(ex?{}:{parents:[fid]})})],{type:'application/json'}));fd.append('file',new Blob([text],{type:'application/json'}));
  await dapi(`https://www.googleapis.com/upload/drive/v3/files${ex?'/'+ex.id:''}?uploadType=multipart`,{method:ex?'PATCH':'POST',body:fd})}
+/* «empezar de cero»: r={t, que:{bancos,estudio,tests,progreso}} */
+function limpiar(r){const q=r.que||{};
+ if(q.bancos)for(const n of Object.keys(Z.banco))if(!Z.dirty['banco-'+n])delete Z.banco[n];
+ if(q.estudio)for(const n of Object.keys(Z.est))if(!Z.dirty['est-'+n])delete Z.est[n];
+ if(q.tests){Z.mine={dev:Z.set.dev,sesiones:(Z.mine.sesiones||[]).filter(x=>new Date(x.fecha).getTime()>r.t),base:{}};Z.otros={}}
+ if(q.progreso){Z.rev={dev:Z.set.dev,log:(Z.rev.log||[]).filter(e=>e.t>r.t),notas:{},cfg:Z.rev.cfg,pos:{}};Z.revOtros={}}
+ Z.set.resetVisto=r.t}
 async function sync(){if(!tok){if(!Z.set.clientId)throw Err('Falta el ID de cliente de Google');await gsi();
   await new Promise((ok,ko)=>google.accounts.oauth2.initTokenClient({client_id:limpia(Z.set.clientId),scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.access_token?(tok=r.access_token,ok()):ko(Err(r.error||'Acceso denegado'))}).requestAccessToken({prompt:'select_account'}))}
- try{const fid=await carpeta(),lst=(await dapi(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files,mio='hist-'+Z.set.dev+'.json';
+ try{const fid=await carpeta();let lst=(await dapi(`${D}?q=${encodeURIComponent(`'${fid}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=1000`)).files;const mio='hist-'+Z.set.dev+'.json';
+  const rf=lst.find(f=>f.name=='reset.json');
+  if(rf&&!Z.dirty['reset.json']){const r=JSON.parse(await(await dapi(`${D}/${rf.id}?alt=media`,{raw:1})).text());if(r.t>(Z.set.resetVisto||0))limpiar(r)}
+  for(const f of lst){const n=f.name;if(!Z.dirty[n]&&((Z.borr['*bancos']&&n.startsWith('banco-'))||(Z.borr['*estudio']&&n.startsWith('est-'))||(Z.borr['*tests']&&/^hist-.*\.json$/.test(n)&&n!=mio)||(Z.borr['*progreso']&&/^rev-.*\.json$/.test(n)&&n!='rev-'+Z.set.dev+'.json')))Z.borr[n]=1}
   for(const f of lst.filter(f=>Z.borr[f.name]))await dapi(`${D}/${f.id}`,{method:'DELETE',raw:1});
+  lst=lst.filter(f=>!Z.borr[f.name]);
   const enDrive=new Set(lst.filter(f=>!Z.borr[f.name]).map(f=>f.name));Z.borr={};
   for(const n of Object.keys(Z.est))if(!enDrive.has('est-'+n)&&!Z.dirty['est-'+n])delete Z.est[n];
-  for(const f of lst){if(!enDrive.has(f.name)||f.name==mio||f.name=='rev-'+Z.set.dev+'.json'||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
+  for(const n of Object.keys(Z.banco))if(!enDrive.has('banco-'+n)&&!Z.dirty['banco-'+n])delete Z.banco[n];
+  for(const n of Object.keys(Z.otros))if(!enDrive.has(n))delete Z.otros[n];
+  for(const n of Object.keys(Z.revOtros))if(!enDrive.has(n))delete Z.revOtros[n];
+  for(const f of lst){if(!enDrive.has(f.name)||f.name=='reset.json'||f.name==mio||f.name=='rev-'+Z.set.dev+'.json'||Z.dirty[f.name])continue;const t=await(await dapi(`${D}/${f.id}?alt=media`,{raw:1})).text();
    if(f.name.startsWith('banco-'))Z.banco[f.name.slice(6)]=t;else if(f.name=='config.json')Z.config=JSON.parse(t);else if(/^hist-.*\.json$/.test(f.name))Z.otros[f.name]=JSON.parse(t);else if(f.name.startsWith('est-'))Z.est[f.name.slice(4)]=t;else if(/^rev-.*\.json$/.test(f.name))Z.revOtros[f.name]=JSON.parse(t)}
-  for(const n of Object.keys(Z.dirty))await subir(fid,n,n=='config.json'?JSON.stringify(Z.config):n.startsWith('est-')?Z.est[n.slice(4)]:Z.banco[n.slice(6)],lst);
+  for(const n of Object.keys(Z.dirty))await subir(fid,n,n=='config.json'?JSON.stringify(Z.config):n=='reset.json'?JSON.stringify(Z.set.reset):n.startsWith('est-')?Z.est[n.slice(4)]:Z.banco[n.slice(6)],lst);
   await subir(fid,mio,JSON.stringify(Z.mine),lst);await subir(fid,'rev-'+Z.set.dev+'.json',JSON.stringify(Z.rev),lst);Z.dirty={};await recargar();await guardar()}
  catch(e){if(/Drive 401/.test(e.message))tok=null;throw e}}
 async function importar(files){const m=[];for(const f of files){const t=await f.text();let j;try{j=JSON.parse(t)}catch{m.push(f.name+': JSON no valido');continue}
@@ -119,9 +133,24 @@ window.vSync=()=>`<h1>Sincronizar</h1><p class="sub">Banco e historial compartid
 <div class="card"><h2>Importar archivos</h2>
 <p class="sub" style="margin-bottom:10px">Ficheros del banco (.json), config.json e historial.json de la versión de Windows. Puedes elegir varios a la vez.</p>
 <input type="file" multiple accept=".json,application/json" onchange="QZ.imp(this.files)">
-<p class="sub mt" style="margin-bottom:0">Banco local: ${Object.keys(Z.banco).length} archivos, ${Z.pregs.length} preguntas · Intentos: ${sesionesTodas().length} · Dispositivo: ${Z.set.dev}</p></div></div>`;
+<p class="sub mt" style="margin-bottom:0">Banco local: ${Object.keys(Z.banco).length} archivos, ${Z.pregs.length} preguntas · Estudio: ${Object.keys(Z.est).length} archivos · Intentos: ${sesionesTodas().length} · Dispositivo: ${Z.set.dev}</p></div></div>
+<div class="card mt" style="border:2px solid #dc262655"><h2>🧹 Empezar de cero</h2>
+<p class="sub" style="margin-bottom:10px">Borra lo que marques en este dispositivo y, al sincronizar, también en Drive y en tus otros dispositivos. Después importa los archivos nuevos. <b>No se puede deshacer.</b></p>
+<div style="display:grid;gap:8px">
+<label><input type="checkbox" id="rz-b" checked> <b>Bancos de preguntas</b> <span class="sub">(${Object.keys(Z.banco).length} archivos · ${Z.pregs.length} preguntas)</span></label>
+<label><input type="checkbox" id="rz-e" checked> <b>Temas de estudio</b> <span class="sub">(${Object.keys(Z.est).length} archivos)</span></label>
+<label><input type="checkbox" id="rz-t"> <b>Historial de tests</b> <span class="sub">(${sesionesTodas().length} intentos, falladas y % de acierto)</span></label>
+<label><input type="checkbox" id="rz-p"> <b>Progreso de estudio</b> <span class="sub">(tarjetas, partes completadas, XP y racha)</span></label></div>
+<p class="sub" style="margin:10px 0 0;font-size:12px">La configuración (temas, bloques y examen) y tu ID de cliente no se tocan.</p>
+<div class="row mt"><button class="btn" style="border-color:#dc2626;color:#dc2626" onclick="QZ.resetUI()">Borrar lo marcado…</button></div></div>`;
 window.QZ={vacio:()=>!Z.pregs.length,cid:v=>{Z.set.clientId=limpia(v);guardar();const e=document.getElementById('qzid');if(e)e.textContent=`ID guardado (${Z.set.clientId.length} caracteres): ${Z.set.clientId||'ninguno'}`},
  async sync(){const f=document.getElementById('qzcid');if(f){Z.set.clientId=limpia(f.value);f.value=Z.set.clientId;await guardar()}const m=document.getElementById('qzm');if(m)m.textContent='Sincronizando…';try{await sync();Z.msg=`Listo: ${Z.pregs.length} preguntas y ${sesionesTodas().length} intentos en total.`}catch(e){Z.msg='Error: '+e.message}window.go('sync')},
+ async resetUI(){const v=id=>document.getElementById(id)?.checked,que={bancos:v('rz-b'),estudio:v('rz-e'),tests:v('rz-t'),progreso:v('rz-p')};
+  const nom=[que.bancos&&'bancos',que.estudio&&'temas de estudio',que.tests&&'historial de tests',que.progreso&&'progreso de estudio'].filter(Boolean);
+  if(!nom.length)return alert('No has marcado nada.');
+  if(prompt(`Vas a borrar: ${nom.join(', ')}.\nEn este dispositivo, en Drive y en tus otros dispositivos.\n\nEscribe BORRAR para confirmar:`)?.trim().toUpperCase()!=='BORRAR')return;
+  await QZ.reset(que);Z.msg='Borrado en este dispositivo. Ahora pulsa «Conectar y sincronizar» para borrarlo también de Drive y, después, importa los archivos nuevos.';
+  if(tok){try{await sync();Z.msg='Borrado aquí y en Drive. Tus otros dispositivos lo borrarán al sincronizar. Ya puedes importar los archivos nuevos.'}catch(e){}}window.go('sync')},
  async imp(files){Z.msg=(await importar(files))+'\nPulsa «Conectar y sincronizar» para subirlo a Drive.';window.go('sync')}};
 // ---------- arranque
 const ready=(async()=>{Z.set=await kget('set')||{dev:Math.random().toString(36).slice(2,8)};Z.banco=await kget('banco')||{};Z.config=await kget('config')||CFG0;
@@ -130,6 +159,11 @@ const ready=(async()=>{Z.set=await kget('set')||{dev:Math.random().toString(36).
  await guardar();await recargar()})();
 window.QZ.ready=ready;
 /* borra un archivo de estudio en este dispositivo; en la próxima sincronización se borra de Drive y de los demás dispositivos */
+/* borra lo elegido aquí y deja una marca en Drive para que los demás dispositivos hagan lo mismo */
+window.QZ.reset=async que=>{const r={t:Date.now(),que};limpiar(r);
+ for(const n of Object.keys(Z.dirty))if((que.bancos&&n.startsWith('banco-'))||(que.estudio&&n.startsWith('est-')))delete Z.dirty[n];
+ Z.borr['*bancos']=que.bancos?1:0;Z.borr['*estudio']=que.estudio?1:0;Z.borr['*tests']=que.tests?1:0;Z.borr['*progreso']=que.progreso?1:0;
+ Z.set.reset=r;Z.dirty['reset.json']=1;await guardar();await recargar()};
 window.QZ.borrarEst=async n=>{if(!(n in Z.est))return;delete Z.est[n];delete Z.dirty['est-'+n];Z.borr['est-'+n]=1;await guardar();if(tok)sync().catch(()=>{})};window.QZ.Z=Z;window.QZ.guardar=guardar;window.QZ.bg=()=>{if(tok)sync().catch(()=>{})};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 })();
