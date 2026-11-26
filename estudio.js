@@ -59,6 +59,12 @@ p.t{margin:.75em 0;line-height:1.65}
 .dots{display:flex;gap:5px;margin:4px 0 12px}.dots i{flex:1;height:6px;border-radius:9px;background:var(--bd)}.dots i.on{background:#7c3aed}.dots i.ok{background:#a78bfa}
 .eb{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--bd);margin:6px 0 2px}.eb i{display:block}
 .xpb{height:10px;border-radius:9px;background:var(--bd);overflow:hidden}.xpb i{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#db2777)}
+/* teoría + práctica */
+.tpr{display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-size:.88em;flex-wrap:wrap}.tpr .bar{min-width:90px;height:9px}.tpr .sep{width:6px}.tpr small{color:var(--mut)}.ani{flex:none;display:block}
+.tpr.big{font-size:1em}.tpr.big .bar{height:12px}
+.modo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 14px}.modo button{padding:16px;border-radius:14px;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 9%,var(--card));color:var(--tx);text-align:left;cursor:pointer}
+.modo button b{display:block;font-size:1.08em;color:var(--c)}.modo button small{color:var(--mut)}@media(max-width:600px){.modo{grid-template-columns:1fr}}
+.lnk{background:none;border:0;color:var(--mut);text-decoration:underline;cursor:pointer;font-size:13px;padding:4px}
 /* home */
 .hero2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
 .hero2 .card{margin:0;padding:14px 16px}.hero2 .big2{font-size:28px;font-weight:800;line-height:1.1}
@@ -162,9 +168,11 @@ function paso(s,t,g,f=1){const ex=exam();
  if(ex>t&&s.reps){const mx=Math.max(1,Math.floor((ex-t)/DAY/2));if(s.ivl>mx){s.ivl=mx;s.due=t+mx*DAY}}return s}
 /* todo el estado se reconstruye desde el registro (así se fusionan los dispositivos sin conflictos) */
 const fac=cid=>(temario(),CACHE.NC[cid]=='memoria'?FMEM:1);
-function estado(){const E={},act={},fin={},reto={},xpd={};let xp=0,best=0;const h0=hoy0(),dias=new Set();
+function estado(){const E={},act={},fin={},reto={},xpd={},pl={},plx={},leido={},borra={};let xp=0,best=0;const h0=hoy0(),dias=new Set();
  for(const e of logs()){const d=fdia(e.t);let g=0;
-  if(e.c){E[e.c]=paso(E[e.c]??nuevo(e.t),e.t,e.g,fac(e.c));g=e.g>1?3:1}
+  if(e.c){E[e.c]=paso(E[e.c]??nuevo(e.t),e.t,e.g,fac(e.c));E[e.c].g=e.g;g=e.g>1?3:1}
+  else if(e.pl){(pl[e.pl]??={})[e.k]=e.t;const s=(plx[e.pl]??=new Set());if(!s.has(e.k)){s.add(e.k);g=2}}
+  else if(e.leido){leido[e.leido]=e.t}else if(e.borra){borra[e.borra]=e.t}
   else if(e.a){act[e.a]=act[e.a]||e.t}
   else if(e.fin){if(!fin[e.fin])g=30;fin[e.fin]=e.t}
   else if(e.x){(reto[e.x]??={})[e.q]=e.ok;g=e.ok?10:2}
@@ -172,19 +180,38 @@ function estado(){const E={},act={},fin={},reto={},xpd={};let xp=0,best=0;const 
   if(g){xp+=g;xpd[d]=(xpd[d]||0)+g;dias.add(d)}}
  for(const h of[Z().mine,...Object.values(Z().otros||{})])for(const s of h?.sesiones||[])if(s.fecha)dias.add(fdia(new Date(s.fecha)));
  let racha=0,dd=Date.now();if(!dias.has(fdia(dd)))dd-=DAY;while(dias.has(fdia(dd))){racha++;dd-=DAY}
- return{E,act,fin,reto,xp,hoy:xpd[fdia(Date.now())]||0,racha,best,h0}}
+ return{E,act,fin,reto,xp,hoy:xpd[fdia(Date.now())]||0,racha,best,h0,pl,leido,borra}}
 const nivel=xp=>{let n=1,need=60,acc=0;while(xp>=acc+need){acc+=need;n++;need=Math.round(need*1.25)}return{n,de:xp-acc,need}};
 const lab=(s,t)=>{const d=s.due-t;return d<36e5?Math.max(1,Math.round(d/MIN))+' min':d<DAY?Math.round(d/36e5)+' h':Math.round(d/DAY)+' d'};
 const hint=(c,g)=>{const t=Date.now(),e=ST.E[c.cid];return lab(paso(e?{...e}:nuevo(t),t,g,esMem(c)?FMEM:1),t)};
 const niv=s=>!s?0:s.ivl>=21?2:1;
 const bar=(cs,E)=>{const n=[0,0,0];cs.forEach(c=>n[niv(E[c.cid])]++);const t=cs.length||1;
  return`<div class=eb><i style="width:${100*n[2]/t}%;background:#16a34a"></i><i style="width:${100*n[1]/t}%;background:#f59e0b"></i></div><small style="color:var(--mut)">${n[2]} dominadas · ${n[1]} aprendiendo · ${n[0]} nuevas</small>`};
-const estP=(p,S0)=>S0.fin[p.tema+':'+p.id]?'ok':S0.act[p.tema+':'+p.id]?'mid':'';
+/* TEORÍA (Calienta + Aprende): se gana leyendo las píldoras o marcando como leído el tema o la parte. «Borrar avance» la pone a cero.
+   PRÁCTICA (Recuerda + Tarjetas + Reto): una parte cuenta solo al completarla entera; el color sale de los resultados. */
+const tk=P=>P.tema+':'+P.id;
+const corte=(P,S0)=>Math.max(S0.borra[P.tema]||0,S0.borra[tk(P)]||0);
+const marcada=(P,S0)=>Math.max(S0.leido[P.tema]||0,S0.leido[tk(P)]||0)>corte(P,S0);
+function teoP(P,S0){const k=tk(P),b=corte(P,S0);if(marcada(P,S0))return 1;
+ return Math.min(1,Object.values(S0.pl[k]||{}).filter(t=>t>b).length/(P.pildoras.length||1))}
+const visto=(P,S0,i)=>(S0.pl[tk(P)]?.[i]||0)>corte(P,S0);
+function pracP(P,S0){const k=tk(P),rv=Object.values(S0.reto[k]||{}),cs=P.cards.filter(c=>S0.E[c.cid]),good=cs.filter(c=>S0.E[c.cid].g>=3).length;
+ return{done:S0.fin[k]?1:0,ok:good+rv.filter(Boolean).length,n:cs.length+rv.length}}
+function resT(t,S0){let te=0,pr=0,ok=0,n=0;for(const p of t.partes){te+=teoP(p,S0);const x=pracP(p,S0);pr+=x.done;ok+=x.ok;n+=x.n}const N=t.partes.length||1;return{teo:te/N,prac:pr/N,cal:n?ok/n:null,ok,n}}
+/* aro que se llena en sentido horario; gris sin resultados, de rojo a verde según el % de aciertos */
+const colCal=c=>c==null?'#94a3b8':`hsl(${Math.round(Math.max(0,Math.min(1,(c-.4)/.5))*125)},72%,42%)`;
+function anillo(p,cal,sz=30,tit=''){const L=2*Math.PI*14,c=colCal(cal);p=Math.max(0,Math.min(1,p||0));
+ return`<svg class=ani width=${sz} height=${sz} viewBox="0 0 36 36" role=img aria-label="${esc(tit)}"><title>${esc(tit)}</title><circle cx=18 cy=18 r=14 fill=none stroke="var(--bd)" stroke-width=5 />${p>0?`<circle cx=18 cy=18 r=14 fill=none stroke="${c}" stroke-width=5 ${p<1?'stroke-linecap=round':''} stroke-dasharray="${(L*p).toFixed(1)} ${L.toFixed(1)}" transform="rotate(-90 18 18)"/>`:''}</svg>`}
+const titAni=r=>`Práctica completada: ${Math.round(100*r.prac)}%${r.cal==null?'':` · aciertos ${Math.round(100*r.cal)}%`}`;
+const linea=(r,big)=>`<div class="tpr${big?' big':''}"><span>📖 Teoría</span><div class=bar style="flex:1"><i style="width:${100*r.teo}%;background:#7c3aed"></i></div><b>${Math.round(100*r.teo)}%</b>
+ <span class=sep></span>${anillo(r.prac,r.cal,big?34:28,titAni(r))}<small>🧠 Práctica ${Math.round(100*r.prac)}%${r.cal==null?'':` · <span style="color:${colCal(r.cal)};font-weight:700">${Math.round(100*r.cal)}% aciertos</span>`}</small></div>`;
+const estP=(p,S0)=>{const t=teoP(p,S0);return t>=1?'ok':t>0||S0.act[tk(p)]?'mid':''};
 const save=()=>QZ.guardar(),R=()=>{window.go('estudio')},RR=()=>{if(typeof render=='function')render()};
 function pendientes(S0){const cs=temario().flatMap(t=>t.partes.flatMap(p=>p.cards)),now=Date.now(),lim=cfgs().nuevas??10,
  nh=Object.values(S0.E).filter(s=>s.first>=S0.h0).length,due=cs.filter(c=>S0.E[c.cid]&&S0.E[c.cid].due<=now),
  nw=cs.filter(c=>!S0.E[c.cid]&&S0.act[c.tema+':'+c.parte]).sort((a,b)=>esMem(b)-esMem(a)).slice(0,Math.max(0,lim-nh));return{due,nw}}
-function siguiente(S0){for(const t of temario())for(const p of t.partes)if(!S0.fin[t.tema+':'+p.id])return p;return null}
+function siguiente(S0){for(const t of temario())for(const p of t.partes)if(teoP(p,S0)<1)return p;return null}
+function sigPra(S0){for(const t of temario())for(const p of t.partes)if(teoP(p,S0)>=1&&!S0.fin[tk(p)])return p;return null}
 
 /* ============ efectos ============ */
 function confeti(){const d=document.createElement('div');d.className='conf';const em=['🎉','⭐','✨','🧠','🏆','💜','📐'];
@@ -217,9 +244,9 @@ function check(b,key){const r=ST.ck?.[key],vf=b.vf!=null,ops=vf?['Verdadero','Fa
 /* ============ vistas ============ */
 function home(){katexOn();const T=temario(),S0=estado(),{due,nw}=pendientes(S0),pend=due.length+nw.length,c=cfgs(),ex=exam(),now=Date.now(),L=nivel(S0.xp),meta=c.meta||60,
  sig=siguiente(S0),cs=T.flatMap(t=>t.partes.flatMap(p=>p.cards)),relHoy=logs().some(e=>e.rel!=null&&e.t>=S0.h0),
- parteHoy=logs().some(e=>(e.fin||e.a)&&e.t>=S0.h0),pm=Math.min(1,S0.hoy/meta);
+ parteHoy=logs().some(e=>(e.pl||e.leido)&&e.t>=S0.h0),praHoy=logs().some(e=>(e.fin||e.x)&&e.t>=S0.h0),sp2=sigPra(S0),pm=Math.min(1,S0.hoy/meta);
  const ring=`<svg viewBox="0 0 36 36" width="54" height="54" style="float:right"><circle cx=18 cy=18 r=15.5 fill=none stroke="var(--bd)" stroke-width=4 /><circle cx=18 cy=18 r=15.5 fill=none stroke="${pm>=1?'#16a34a':'#7c3aed'}" stroke-width=4 stroke-linecap=round stroke-dasharray="${97.4*pm} 97.4" transform="rotate(-90 18 18)"/></svg>`;
- return`<div class=es><h1>Estudiar</h1><p class=sub>Misiones cortas: calienta, aprende, recuerda, repasa y supera el reto. Poco cada día, sin saltarse días.</p>
+ return`<div class=es><h1>Estudiar</h1><p class=sub>📖 <b>Teoría</b> para leer y entender · 🧠 <b>Práctica interactiva</b> para memorizar y comprobarlo. Poco cada día, sin saltarse días.</p>
 <div class=hero2>
  <div class=card><small>Examen</small><div class=big2>${ex>now?Math.ceil((ex-now)/DAY)+' días':'—'}</div><small style="color:var(--mut)">${ex>now?'los repasos se ajustan a la fecha':'pon la fecha en Ajustes ↓'}</small></div>
  <div class=card><small>Racha</small><div class=big2>🔥 ${S0.racha}</div><small style="color:var(--mut)">${S0.racha?'días seguidos':'empieza hoy'}</small></div>
@@ -228,12 +255,13 @@ function home(){katexOn();const T=temario(),S0=estado(),{due,nw}=pendientes(S0),
 </div>
 <div class=card><h2>🗺️ Misión de hoy <small style="font-weight:500;color:var(--mut)">· unos 20 min</small></h2><ul class=mis>
  <li class="${pend?'':'ok'}"><span class=st>${pend?1:'✓'}</span><span class=tx2 style="flex:1"><b>Repasa tus tarjetas</b><br><small style="color:var(--mut)">${pend?`${due.length} repasos + ${nw.length} nuevas · ~${Math.max(1,Math.round(pend/5))} min`:'nada pendiente ahora mismo'}</small></span>${pend?`<button class="btn pri" onclick="EST.cola(15)">Repasar</button>`:''}</li>
- <li class="${parteHoy?'ok':''}"><span class=st>${parteHoy?'✓':2}</span><span class=tx2 style="flex:1"><b>${sig?`Aprende: ${esc(sig.tema)} · ${esc(sig.titulo)}`:'Todas las partes completadas'}</b><br><small style="color:var(--mut)">${sig?`${sig.pildoras.length} píldoras · ${sig.cards.length} tarjetas${sig.estrella?' · <span class=star>★ muy preguntado</span>':''}`:'repasa con la chuleta y el relámpago'}</small></span>${sig?`<button class="btn ${pend?'':'pri'}" onclick="EST.parte('${sig.tema}','${sig.id}')">Ir</button>`:''}</li>
+ <li class="${parteHoy?'ok':''}"><span class=st>${parteHoy?'✓':2}</span><span class=tx2 style="flex:1"><b>${sig?`📖 Teoría: ${esc(sig.tema)} · ${esc(sig.titulo)}`:'Toda la teoría leída'}</b><br><small style="color:var(--mut)">${sig?`${sig.pildoras.length} píldoras${sig.estrella?' · <span class=star>★ muy preguntado</span>':''}`:'¡bien! sigue con la práctica'}</small></span>${sig?`<button class="btn ${pend?'':'pri'}" onclick="EST.parte('${sig.tema}','${sig.id}','teo')">Leer</button>`:''}</li>
+ ${sp2?`<li class="${praHoy?'ok':''}"><span class=st>${praHoy?'✓':'+'}</span><span class=tx2 style="flex:1"><b>🧠 Práctica: ${esc(sp2.tema)} · ${esc(sp2.titulo)}</b><br><small style="color:var(--mut)">recuerda, tarjetas y reto · ya has leído su teoría</small></span><button class=btn onclick="EST.parte('${sp2.tema}','${sp2.id}','pra')">Practicar</button></li>`:''}
  <li class="${relHoy?'ok':''}"><span class=st>${relHoy?'✓':3}</span><span class=tx2 style="flex:1"><b>⚡ Relámpago de 60 segundos</b><br><small style="color:var(--mut)">verdadero o falso a toda velocidad${S0.best?` · récord ${S0.best}`:''}</small></span><button class=btn onclick="EST.relampago()">Jugar</button></li>
 </ul></div>
-${T.length?T.map(t=>{const cc=t.partes.flatMap(p=>p.cards),nf=t.partes.filter(p=>S0.fin[t.tema+':'+p.id]).length;
- return`<div class=card><div class=row><b style="font-size:1.05em">${esc(t.tema)}</b><span>${esc(t.titulo)}</span><span class=sp></span><span class="pill ${nf==t.partes.length?'gn':'vi'}">${nf}/${t.partes.length} partes</span></div>
- <div style="margin:10px 0 2px">${t.partes.map((p,i)=>`<span class="pd ${estP(p,S0)}" title="${esc(p.titulo)}">${estP(p,S0)=='ok'?'✓':i+1}</span>`).join('')}</div>${bar(cc,S0.E)}
+${T.length?T.map(t=>{const r=resT(t,S0);
+ return`<div class=card><div class=row><b style="font-size:1.05em">${esc(t.tema)}</b><span>${esc(t.titulo)}</span><span class=sp></span><span class="pill ${r.teo>=1?'gn':'vi'}">${t.partes.filter(p=>teoP(p,S0)>=1).length}/${t.partes.length} partes leídas</span></div>
+ <div style="margin:10px 0 2px">${t.partes.map((p,i)=>`<span class="pd ${estP(p,S0)}" title="${esc(p.titulo)}">${estP(p,S0)=='ok'?'✓':i+1}</span>`).join('')}</div>${linea(r)}
  <div class=row style="margin-top:10px"><button class="btn pri" onclick="EST.tema('${t.tema}')">Abrir tema</button><button class=btn onclick="EST.chuleta('${t.tema}')">📋 Chuleta</button><button class=btn onclick="EST.todo('${t.tema}')">🔁 Repasar todo</button></div></div>`}).join('')
  :'<div class=card><b>Aún no hay temas de estudio.</b><p class=sub>Importa los archivos de estudio (.json) desde «Sincronizar».</p></div>'}
 <details class=card><summary style="cursor:pointer;font-weight:700">⚙️ Ajustes</summary><div class=row style="margin-top:12px;gap:14px">
@@ -248,26 +276,37 @@ ${T.length?T.map(t=>{const cc=t.partes.flatMap(p=>p.cards),nf=t.partes.filter(p=
 function vTema(){katexOn();const t=tema(ST.t);if(!t)return home();const S0=estado(),tot=t.partes.reduce((a,p)=>a+p.examen,0);
  return`<div class=es><p><button class=btn onclick="EST.home()">◀ Estudiar</button></p><h1>${esc(t.tema)} · ${esc(t.titulo)}</h1>
  ${t.frase?`<div class=frase>${rt(t.frase)}</div>`:''}${t.esfuerzo?`<div class="bx truco"><span class=bh>🎯 Dónde poner el esfuerzo</span>${rt(t.esfuerzo)}</div>`:''}
- <div class=row style="margin-bottom:14px"><button class=btn onclick="EST.chuleta('${t.tema}')">📋 Chuleta del tema</button><button class=btn onclick="EST.todo('${t.tema}')">🔁 Repasar todas las tarjetas</button></div>
- <div class=ruta>${t.partes.map((p,i)=>{const e=estP(p,S0),rr=S0.reto[t.tema+':'+p.id]||{},ok=Object.values(rr).filter(Boolean).length,n=Object.keys(rr).length;
+ <div class=card>${linea(resT(t,S0),1)}
+  <div class=modo style="margin-top:14px"><button style="--c:#7c3aed" onclick="EST.teo('${t.tema}')"><b>📖 Teoría</b><small>Calienta y aprende, píldora a píldora. Cuenta solo con leerla.</small></button>
+  <button style="--c:#0d9488" onclick="EST.pra('${t.tema}')"><b>🧠 Práctica interactiva</b><small>Recuerda, tarjetas y reto. Cada parte cuenta al completarla entera.</small></button></div>
+  <div class=row>${resT(t,S0).teo<1?`<button class=btn onclick="EST.leido('${t.tema}')">✓ Marcar tema como leído</button>`:''}${resT(t,S0).teo>0?`<button class=btn onclick="EST.borraL('${t.tema}')">↺ Borrar avance de lectura</button>`:''}<span class=sp></span><button class=btn onclick="EST.chuleta('${t.tema}')">📋 Chuleta</button><button class=btn onclick="EST.todo('${t.tema}')">🔁 Repasar todas las tarjetas</button></div>
+  <p class=sub style="margin:8px 0 0;font-size:12px">«Marcar como leído» es para cuando lo lees en papel. «Borrar avance» solo quita la lectura; la práctica no se toca.</p></div>
+ <div class=ruta>${t.partes.map((p,i)=>{const e=estP(p,S0),rr=S0.reto[t.tema+':'+p.id]||{},ok=Object.values(rr).filter(Boolean).length,n=Object.keys(rr).length,tp=teoP(p,S0),pp=pracP(p,S0),cal=pp.n?pp.ok/pp.n:null;
   return`<div class=card><span class="nd ${e}">${e=='ok'?'✓':i+1}</span><div class=row><b>${esc(p.titulo)}</b>${p.estrella?'<span class=star>★</span>':''}</div>
   <div style="margin:6px 0">${p.examen?`<span class="pill am">📝 ${p.examen} de ${tot} preguntas de examen</span>`:''}${p.pagina.length?`<span class=pill>pág. ${p.pagina.join('–')}</span>`:''}<span class=pill>${p.pildoras.length} píldoras</span>${n?`<span class="pill ${ok==n?'gn':''}">🏆 reto ${ok}/${n}</span>`:''}</div>
-  ${p.paraque?`<div style="color:var(--mut);font-size:.92em">${rt(p.paraque)}</div>`:''}${p.cards.length?bar(p.cards,S0.E):''}
-  <div class=row style="margin-top:10px"><button class="btn ${e=='ok'?'':'pri'}" onclick="EST.parte('${t.tema}','${p.id}')">${e=='ok'?'Volver a estudiar':e=='mid'?'Continuar':'Empezar'}</button>${p.cards.some(c=>S0.E[c.cid])?`<button class=btn onclick="EST.rep('${t.tema}','${p.id}')">Repasar tarjetas</button>`:''}<button class=btn onclick="EST.reto('${t.tema}','${p.id}')">🏆 Reto</button></div></div>`}).join('')}</div></div>`}
+  ${p.paraque?`<div style="color:var(--mut);font-size:.92em">${rt(p.paraque)}</div>`:''}
+  <div class=tpr><span>📖</span><div class=bar style="flex:1"><i style="width:${100*tp}%;background:#7c3aed"></i></div><b>${tp>=1?'leída':Math.round(100*tp)+'%'}</b><span class=sep></span>${anillo(pp.done,cal,26,pp.done?'Práctica completada':'Práctica pendiente')}<small>${pp.done?'práctica hecha':'práctica pendiente'}${cal==null?'':` · <span style="color:${colCal(cal)};font-weight:700">${Math.round(100*cal)}%</span>`}</small></div>
+  <div class=row style="margin-top:10px"><button class="btn ${tp<1?'pri':''}" onclick="EST.parte('${t.tema}','${p.id}','teo')">📖 Teoría</button><button class="btn ${tp>=1&&!pp.done?'pri':''}" onclick="EST.parte('${t.tema}','${p.id}','pra')">🧠 Práctica interactiva</button>${p.cards.some(c=>S0.E[c.cid])?`<button class=btn onclick="EST.rep('${t.tema}','${p.id}')">🃏 Repasar tarjetas</button>`:''}<button class=btn onclick="EST.reto('${t.tema}','${p.id}')">🏆 Reto</button>
+  <span class=sp></span>${tp<1?`<button class=lnk onclick="EST.leido('${tk(p)}')">✓ marcar leída</button>`:`<button class=lnk onclick="EST.borraL('${tk(p)}')">↺ borrar lectura</button>`}</div></div>`}).join('')}</div></div>`}
 
 const PASOS=[['🎯','Calienta'],['📖','Aprende'],['🧠','Recuerda'],['🃏','Tarjetas'],['🏆','Reto']];
+function verPl(P){const S0=estado();if(!visto(P,S0,ST.k))apunta({pl:tk(P),k:ST.k})}
 function vParte(){katexOn();const P=part(ST.t,ST.p);if(!P)return home();const s=ST.s,k=ST.t+':'+ST.p;
  const hd=`<div class=es><div class=row><button class=btn onclick="EST.tema('${ST.t}')">◀ ${esc(ST.t)}</button><span class=sp></span>${FOCO?'':`<button class=btn onclick="EST.foco(15)">🍅 Foco 15'</button>`}</div>
  <h1 style="margin-top:12px">${esc(P.titulo)} ${P.estrella?'<span class=star>★</span>':''}</h1>
- <div class=stp>${PASOS.map(([e,n],i)=>`<button class="${i==s?'on':i<s?'ok':''}" onclick="EST.s(${i})">${e} ${n}${i==1&&s==1?` ${ST.k+1}/${P.pildoras.length}`:''}</button>`).join('')}</div>`;
+ <div class=row style="margin:-4px 0 4px"><span class="pill ${s<=1||s==5?'vi':'gn'}" style="font-size:13px">${s<=1||s==5?'📖 Teoría':'🧠 Práctica interactiva'}</span></div>
+ <div class=stp>${PASOS.map(([e,n],i)=>[i,e,n]).filter(([i])=>s<=1||s==5?i<=1:i>=2).map(([i,e,n])=>`<button class="${i==s?'on':i<s||s==5?'ok':''}" onclick="EST.s(${i})">${e} ${n}${i==1&&s==1?` ${ST.k+1}/${P.pildoras.length}`:''}</button>`).join('')}</div>`;
+ if(s==5){const T=tema(ST.t),i=T.partes.findIndex(p=>p.id==ST.p),nx=T.partes[i+1];
+  return hd+`<div class=card style="text-align:center"><div style="font-size:50px">📖✓</div><h2 style="font-size:1.35em">Teoría de esta parte leída</h2><p class=t>Ya cuenta en tu avance de teoría. Cuando quieras, fíjala con la práctica interactiva: recuerda, tarjetas y reto.</p></div>
+  <div class=row><button class=btn onclick="EST.tema('${ST.t}')">◀ Volver al tema</button><span class=sp></span>${nx?`<button class=btn onclick="EST.parte('${ST.t}','${nx.id}','teo')">📖 Siguiente parte: ${esc(nx.titulo)}</button>`:''}<button class="btn pri" onclick="EST.s(2)">🧠 Hacer la práctica ahora</button></div></div>`}
  if(s==0){const g=P.gancho;if(!g)return hd+`${P.paraque?`<div class="bx paraque"><span class=bh>${CAJA.paraque}</span>${rt(P.paraque)}</div>`:''}<button class="btn pri bigbtn" onclick="EST.s(1)">Empezar a aprender →</button></div>`;
   return hd+`${P.paraque?`<div class="bx paraque"><span class=bh>${CAJA.paraque}</span>${rt(P.paraque)}</div>`:''}
   <div class=card><p class=sub style="margin:0 0 6px">Antes de leer, <b>apuesta</b>. No cuenta para nada, pero intentar adivinar hace que lo que leas después se te quede mucho mejor.</p>${check(g,'g')}</div>
   <button class="btn pri bigbtn" onclick="EST.s(1)">${ST.ck?.g!=null?'Ahora sí: a aprender →':'Saltar y aprender →'}</button></div>`}
- if(s==1){const n=P.pildoras.length,pl=P.pildoras[ST.k]||P.pildoras[0];
+ if(s==1){const n=P.pildoras.length,pl=P.pildoras[ST.k]||P.pildoras[0];verPl(P);
   return hd+`<div class=dots>${P.pildoras.map((_,i)=>`<i class="${i==ST.k?'on':i<ST.k?'ok':''}"></i>`).join('')}</div>
   <div class=card><small style="color:#7c3aed;font-weight:800">PÍLDORA ${ST.k+1} DE ${n} · ≈ 1–2 min</small><h2 style="margin:4px 0 8px;font-size:1.25em">${rt(pl.titulo)}</h2>${(pl.bloques||[]).map((b,i)=>bloque(b,ST.k+'_'+i)).join('')}</div>
-  <div class=row><button class=btn ${ST.k?'':'disabled'} onclick="EST.pk(-1)">◀ Anterior</button><span class=sp></span>${ST.k<n-1?`<button class="btn pri" onclick="EST.pk(1)">Siguiente píldora ▶</button>`:`<button class="btn pri" onclick="EST.s(2)">¡Hecho! Ahora recuerda sin mirar ▶</button>`}</div>
+  <div class=row><button class=btn ${ST.k?'':'disabled'} onclick="EST.pk(-1)">◀ Anterior</button><span class=sp></span>${ST.k<n-1?`<button class="btn pri" onclick="EST.pk(1)">Siguiente píldora ▶</button>`:`<button class="btn pri" onclick="EST.s(5)">✓ Teoría terminada</button>`}</div>
   <p class=kbd><kbd>←</kbd><kbd>→</kbd> moverse entre píldoras</p></div>`}
  if(s==2){const nt=notas()[k]?.x||'';
   if(!ST.cmp)return hd+`<div class=card><p class=t style="margin-top:0"><b>Sin mirar</b>, escribe o di en voz alta todo lo que recuerdes de esta parte, como si se lo explicaras a alguien. Fórmulas incluidas. El esfuerzo de recordar es lo que graba.</p><textarea id=nt placeholder="Lo que recuerdo…">${esc(nt)}</textarea></div><button class="btn pri bigbtn" onclick="EST.comp()">Comparar con las claves →</button></div>`;
@@ -275,7 +314,7 @@ function vParte(){katexOn();const P=part(ST.t,ST.p);if(!P)return home();const s=
   return hd+`<div class=card><h2>¿Lo dijiste? Marca cada clave</h2><ul class=cl>${cl.map((x,i)=>`<li><span class=tg><button class="${ST.cmp[i]==1?'y':''}" onclick="EST.cl(${i},1)">✓</button><button class="${ST.cmp[i]==0?'n':''}" onclick="EST.cl(${i},0)">✗</button></span><span>${nvB(x.nivel)}${rt(x.x)}</span></li>`).join('')}</ul>
   ${dec==cl.length&&cl.length?`<div class="bx ${ok/cl.length>=.7?'ejemplo':'truco'}"><span class=bh>${ok}/${cl.length} claves</span>${ok/cl.length>=.7?'¡Muy bien! Las tarjetas terminarán de fijarlo.':'Normal en la primera vuelta. Relee las que marcaste con ✗ (botón de abajo) o pasa a las tarjetas: están hechas para eso.'}</div>`:''}
   ${nt?`<details><summary style="cursor:pointer;color:var(--mut)">Lo que escribiste</summary><p class=t>${esc(nt).replace(/\n/g,'<br>')}</p></details>`:''}</div>
-  <div class=row><button class=btn onclick="EST.s(1)">📖 Releer</button><span class=sp></span><button class="btn pri" onclick="EST.s(3)">Pasar a las tarjetas (${P.cards.length}) ▶</button></div></div>`}
+  <div class=row><button class=btn onclick="EST.parte('${ST.t}','${ST.p}','teo')">📖 Releer la teoría</button><span class=sp></span><button class="btn pri" onclick="EST.s(3)">Pasar a las tarjetas (${P.cards.length}) ▶</button></div></div>`}
  if(s==3){const S0=estado(),now=Date.now(),pc=P.cards.filter(c=>!S0.E[c.cid]||S0.E[c.cid].due<=now);
   return hd+`<div class=card><h2>🃏 Tarjetas de esta parte</h2>${bar(P.cards,S0.E)}<p class=t>${pc.length?`Tienes <b>${pc.length}</b> tarjetas para ahora. Responde mentalmente y luego valora con sinceridad: la app decide cuándo volver a enseñártelas.`:'Todas las tarjetas de esta parte están al día. ¡Bien!'}</p></div>
   <div class=row><span class=sp></span>${pc.length?`<button class="btn pri" onclick="EST.tarj()">Empezar tarjetas ▶</button>`:''}<button class="btn ${pc.length?'':'pri'}" onclick="EST.s(4)">Ir al reto 🏆</button></div></div>`}
@@ -303,7 +342,7 @@ function vReto(P){if(!ST.R){ST.R={qs:preguntasReto(P),i:0,m:[],t0:Date.now()}}co
 function guardaReto(P){const R0=ST.R;if(!R0||R0.ok)return;R0.ok=1;const ex=Z().config.examen,n=R0.qs.length;if(!n)return;
  const det=R0.qs.map((q,i)=>({id:q.id,tema:q.tema,pagina:q.pagina,enunciado:q.enunciado,ops:q.ops,cor:q.cor,marca:R0.m[i]??null,expl:q.explicacion}));
  const ac=det.filter(d=>d.marca===d.cor).length,er=det.filter(d=>d.marca!=null&&d.marca!==d.cor).length;
- Z().mine.sesiones.push({id:crypto.randomUUID(),fecha:new Date(Date.now()-new Date().getTimezoneOffset()*MIN).toISOString().slice(0,19),tipo:`Reto ${P.tema} · ${plain(P.titulo)}`,modo:'estudio',
+ Z().mine.sesiones.push({id:crypto.randomUUID(),fecha:new Date(Date.now()-new Date().getTimezoneOffset()*MIN).toISOString().slice(0,19),tipo:`Reto ${P.tema} · ${plain(P.titulo)}`,reto:true,modo:'estudio',
   aciertos:ac,errores:er,blancos:n-ac-er,nota:+(Math.max(0,ac-er*ex.penalizacion_por_error)*ex.puntos_maximos/n).toFixed(2),minutos:+((Date.now()-R0.t0)/MIN).toFixed(1),detalle:det});
  save();QZ.bg()}
 
@@ -370,8 +409,15 @@ window.vEstudio=()=>{if(!(QZ.Z&&QZ.Z.rev))return'<p class=sub>Cargando…</p>';c
  if(ST.v=='rel')setTimeout(relTick);return`<div style="--fs:${cfgs().fs||17}px">${h}</div>`};
 window.EST={
  home(){ST={v:'home'};R()},tema(t){ST={v:'tema',t};R()},chuleta(t){ST={v:'chul',t};R()},
- parte(t,p){const k=t+':'+p,pos=Z().rev.pos?.[k];ST={v:'parte',t,p,s:pos?.s??0,k:pos?.k??0,ck:{},cmp:null};if(!estado().act[k])apunta({a:k});R()},
- s(n){ST.s=n;ST.cmp=n==2?ST.cmp:null;if(n==4)ST.R=null;(Z().rev.pos??={})[ST.t+':'+ST.p]={s:Math.min(n,3),k:ST.k};save();R()},
+ parte(t,p,m='teo'){const k=t+':'+p,pos=Z().rev.pos?.[k],P=part(t,p),S0=estado(),kk=Math.min(pos?.k??0,(P?.pildoras.length||1)-1);
+  ST={v:'parte',t,p,s:m=='pra'?2:(P?.gancho&&!kk&&teoP(P,S0)==0?0:1),k:kk,ck:{},cmp:null};if(!S0.act[k])apunta({a:k});R()},
+ s(n){ST.s=n;ST.cmp=n==2?ST.cmp:null;if(n==4)ST.R=null;(Z().rev.pos??={})[ST.t+':'+ST.p]={k:ST.k};save();R()},
+ teo(t){const S0=estado(),T=tema(t),p=T.partes.find(p=>teoP(p,S0)<1)||T.partes[0];EST.parte(t,p.id,'teo')},
+ pra(t){const S0=estado(),T=tema(t),p=T.partes.find(p=>!S0.fin[tk(p)])||T.partes[0];EST.parte(t,p.id,'pra')},
+ leido(key){const tm=!key.includes(':'),q=tm?'¿Marcar todo el tema '+key+' como leído?':'¿Marcar esta parte como leída?';if(!confirm(q+' Contará como teoría leída al 100 %.'))return;apunta({leido:key});tst(tm?'Tema marcado como leído 📖✓':'Parte marcada como leída');RR()},
+ borraL(key){const tm=!key.includes(':');if(!confirm(tm?`¿Borrar el avance de lectura de ${key}? La práctica (tarjetas, retos) no se toca.`:'¿Borrar la lectura de esta parte? La práctica no se toca.'))return;
+  apunta({borra:key});const pos=Z().rev.pos||{};for(const k of Object.keys(pos))if(k==key||k.startsWith(key+':'))delete pos[k];save();tst('Avance de lectura borrado');RR()},
+ anillo,
  pk(d){const P=part(ST.t,ST.p);ST.k=Math.max(0,Math.min(P.pildoras.length-1,ST.k+d));(Z().rev.pos??={})[ST.t+':'+ST.p]={s:1,k:ST.k};save();R()},
  chk(key,j){(ST.ck??={})[key]=j;RR()},
  comp(){const a=$$('#nt');if(a){(Z().rev.notas??={})[ST.t+':'+ST.p]={x:a.value,t:Date.now()};save()}ST.cmp={};RR()},
@@ -382,8 +428,8 @@ window.EST={
  reto(t,p){ST={v:'parte',t,p,s:4,k:0,ck:{},cmp:null,R:null};R()},
  rr(j){const R0=ST.R,q=R0.qs[R0.i];R0.m[R0.i]=j;apunta({x:ST.t+':'+ST.p,q:q.id,ok:j==q.cor});RR()},
  rn(){const R0=ST.R;R0.i++;if(R0.i>=R0.qs.length){guardaReto(part(ST.t,ST.p));const ok=R0.m.filter((m,i)=>m==R0.qs[i].cor).length;if(ok>=R0.qs.length*.6)confeti()}RR();scrollTo(0,0)},
- terminar(){const k=ST.t+':'+ST.p,t=ST.t;if(!estado().fin[k]){apunta({fin:k});confeti()}if(Z().rev.pos)delete Z().rev.pos[k];save();
-  const T=tema(t),i=T.partes.findIndex(p=>p.id==ST.p),nx=T.partes[i+1];if(nx){tst('¡Parte completada! +30 XP');EST.parte(t,nx.id)}else{tst('¡Tema completado! 🏆');EST.tema(t)}},
+ terminar(){const k=ST.t+':'+ST.p,t=ST.t;if(!estado().fin[k]){apunta({fin:k});confeti()}save();
+  const T=tema(t),S0=estado(),todo=T.partes.every(p=>S0.fin[tk(p)]);tst(todo?'¡Práctica del tema completada! 🏆':'¡Práctica de la parte completada! +30 XP');EST.tema(t)},
  vuelta(){const v=ST.vuelta;if(!v)return EST.home();ST={...v,ck:{},cmp:null,R:null};R()},
  cola(n){empieza(cola(n))},m(){ST.m=true;RR()},vf(j){ST.r=j;ST.m=true;RR()},
  g(g){const c=ST.q[ST.i],t=Date.now();Z().rev.log.push({t,c:c.cid,g});ST.E[c.cid]=paso(ST.E[c.cid]?{...ST.E[c.cid]}:nuevo(t),t,g,esMem(c)?FMEM:1);ST.g[g]++;save();
@@ -399,16 +445,16 @@ window.EST={
  cfg(){Z().rev.cfg={examen:$$('#ex').value,nuevas:Math.max(0,+$$('#nu').value||0),meta:Math.max(10,+$$('#me').value||60),fs:+$$('#fs').value||17,ts:Date.now()};save();RR()},
  /* tarjeta-resumen para el Panel */
  /* progreso de estudio por tema, para el Panel: parte completada = 1, empezada = ½ */
- progreso(){if(!(QZ.Z&&QZ.Z.rev))return{};const S0=estado(),o={};for(const t of temario()){const cs=t.partes.flatMap(p=>p.cards),fin=t.partes.filter(p=>S0.fin[t.tema+':'+p.id]).length,
-  emp=t.partes.filter(p=>S0.act[t.tema+':'+p.id]&&!S0.fin[t.tema+':'+p.id]).length;
-  o[t.tema]={partes:t.partes.length,fin,emp,pct:t.partes.length?Math.round(100*(fin+emp/2)/t.partes.length):0,cards:cs.length,dom:cs.filter(c=>niv(S0.E[c.cid])==2).length,vistas:cs.filter(c=>S0.E[c.cid]).length}}return o},
+ /* para el Panel: pct = teoría (0–100), prac = práctica completada (0–100), ok/n = aciertos de práctica */
+ progreso(){if(!(QZ.Z&&QZ.Z.rev))return{};const S0=estado(),o={};for(const t of temario()){const r=resT(t,S0);
+  o[t.tema]={partes:t.partes.length,pct:Math.round(100*r.teo),prac:Math.round(100*r.prac),cal:r.cal,ok:r.ok,n:r.n}}return o},
  resumen(){if(!(QZ.Z&&QZ.Z.rev))return'';const T=temario();if(!T.length)return'';const S0=estado(),{due,nw}=pendientes(S0),sig=siguiente(S0),ex=exam(),now=Date.now();
   return`<div class="card mt" style="border:2px solid #7c3aed55"><div class=row><h2 style="margin:0">🧠 Misión de hoy</h2><span class=sp></span><span class=badge>🔥 ${S0.racha} ${S0.racha==1?'día':'días'}</span><span class=badge>${S0.hoy}/${cfgs().meta||60} XP hoy</span>${ex>now?`<span class=badge>${Math.ceil((ex-now)/DAY)} días para el examen</span>`:''}</div>
-  <p style="margin:10px 0">${due.length+nw.length?`<b>${due.length+nw.length}</b> tarjetas pendientes`:'Tarjetas al día'}${sig?` · siguiente parte: <b>${esc(sig.tema)} · ${esc(sig.titulo)}</b>`:''}</p><button class="btn pri" onclick="go('estudio')">Empezar a estudiar ▶</button></div>`}};
+  <p style="margin:10px 0">${due.length+nw.length?`<b>${due.length+nw.length}</b> ${due.length+nw.length==1?'tarjeta pendiente':'tarjetas pendientes'}`:'Tarjetas al día'}${sig?` · teoría siguiente: <b>${esc(sig.tema)} · ${esc(sig.titulo)}</b>`:''}</p><button class="btn pri" onclick="go('estudio')">Empezar a estudiar ▶</button></div>`}};
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select')||e.ctrlKey||e.metaKey)return;const k=e.key.toLowerCase();
  if(typeof S!=='undefined'&&S.view!=='estudio')return;
  if(ST.v=='ses'&&ST.i<ST.q.length){const c=ST.q[ST.i];
   if(!ST.m&&c.vf!=null&&(k=='v'||k=='f')){EST.vf(k=='v'?0:1)}else if(!ST.m&&c.vf==null&&(k==' '||k=='enter')){e.preventDefault();EST.m()}else if(ST.m&&'1234'.includes(k)&&k)EST.g(+k)}
- else if(ST.v=='parte'&&ST.s==1){if(k=='arrowright'){const P=part(ST.t,ST.p);ST.k<P.pildoras.length-1?EST.pk(1):EST.s(2)}else if(k=='arrowleft')EST.pk(-1)}
+ else if(ST.v=='parte'&&ST.s==1){if(k=='arrowright'){const P=part(ST.t,ST.p);ST.k<P.pildoras.length-1?EST.pk(1):EST.s(5)}else if(k=='arrowleft')EST.pk(-1)}
  else if(ST.v=='rel'&&!ST.G.done){if(k=='v'||k=='arrowleft')EST.rv(1);else if(k=='f'||k=='arrowright')EST.rv(0)}});
 })();

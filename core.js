@@ -54,7 +54,7 @@ function aStart(b){const h=histPreg(),cfg=Z.config,tipo=b.tipo;let modo=b.modo||
  const qs=lista.map(prep),sid=crypto.randomUUID();SES.set(sid,{titulo,modo,qs,t0:Date.now()});
  return{sid,titulo,modo,limite,qs:qs.map(q=>({id:q.id,tema:q.tema,pagina:q.pagina,enunciado:q.enunciado,ops:q.ops}))}}
 function aAnswer(b){const s=SES.get(b.sid);if(!s)throw Err('Sesion no encontrada');const q=s.qs[+b.i];return{cor:q.cor,explicacion:q.explicacion}}
-function resumen(s,i){const ex=Z.config.examen,n=s.aciertos+s.errores+s.blancos;return{i,fecha:s.fecha,tipo:s.tipo,modo:s.modo,n,aciertos:s.aciertos,errores:s.errores,blancos:s.blancos,minutos:s.minutos,nota:s.nota,pct:n?Math.round(1000*s.aciertos/n)/10:0,apto:s.nota>=ex.puntos_aprobado,detalle:!!(s.detalle&&s.detalle.length)}}
+function resumen(s,i){const ex=Z.config.examen,n=s.aciertos+s.errores+s.blancos;return{i,fecha:s.fecha,tipo:s.tipo,modo:s.modo,n,aciertos:s.aciertos,errores:s.errores,blancos:s.blancos,minutos:s.minutos,nota:s.nota,pct:n?Math.round(1000*s.aciertos/n)/10:0,apto:s.nota>=ex.puntos_aprobado,detalle:!!(s.detalle&&s.detalle.length),reto:!!s.reto||/^Reto /.test(s.tipo||'')}}
 async function aFinish(b){const s=SES.get(b.sid);if(!s)throw Err('Sesion no encontrada');SES.delete(b.sid);const ex=Z.config.examen,rr=b.respuestas||[],k=Math.min(s.qs.length,rr.length),rs=s.qs.slice(0,k).map((p,i)=>[p,rr[i]]);
  const ac=rs.filter(([p,m])=>m!=null&&m==p.cor).length,er=rs.filter(([p,m])=>m!=null&&m!=p.cor).length,bl=rs.filter(([p,m])=>m==null).length,n=rs.length||1;
  const nota=+(Math.max(0,ac-er*ex.penalizacion_por_error)*ex.puntos_maximos/n).toFixed(2);
@@ -74,8 +74,8 @@ function aStats(){const h=histPreg(),tabla=[],bl={};
  for(const r of Object.values(bl))r.pct=r.ac+r.fa?Math.round(100*r.ac/(r.ac+r.fa)):null;
  const ses=aSesiones(),dias=new Set(ses.map(s=>s.fecha.slice(0,10))),f=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
  let racha=0,d=new Date();if(!dias.has(f(d)))d=new Date(d-864e5);while(dias.has(f(d))){racha++;d=new Date(d-864e5)}
- const tot=ses.reduce((a,s)=>a+s.n,0),tac=ses.reduce((a,s)=>a+s.aciertos,0),ul=ses.slice(-5).map(s=>s.nota),hv=Object.values(h);
- return{por_tema:tabla,por_bloque:Object.values(bl),sesiones:ses,racha,pct_global:tot?Math.round(1000*tac/tot)/10:null,nota_media5:ul.length?+(ul.reduce((a,b)=>a+b,0)/ul.length).toFixed(2):null,dominadas:hv.filter(x=>x.ultimo=='acierto').length,falladas:hv.filter(x=>x.ultimo=='fallo').length}}
+ const tests=ses.filter(s=>!s.reto),tot=ses.reduce((a,s)=>a+s.n,0),tac=ses.reduce((a,s)=>a+s.aciertos,0),ul=tests.slice(-5).map(s=>s.nota),hv=Object.values(h);
+ return{por_tema:tabla,por_bloque:Object.values(bl),sesiones:ses,tests,racha,pct_global:tot?Math.round(1000*tac/tot)/10:null,nota_media5:ul.length?+(ul.reduce((a,b)=>a+b,0)/ul.length).toFixed(2):null,dominadas:hv.filter(x=>x.ultimo=='acierto').length,falladas:hv.filter(x=>x.ultimo=='fallo').length}}
 window.api=async(p,b)=>{await ready;const[ruta,qs]=p.split('?'),q=new URLSearchParams(qs||'');
  const fn={info:aInfo,stats:aStats,sesiones:aSesiones,sesion:()=>aSesion(+(q.get('i')??-1)),start:()=>aStart(b||{}),answer:()=>aAnswer(b||{}),finish:()=>aFinish(b||{})}[ruta];
  if(!fn)throw Err('No encontrado');return JSON.parse(JSON.stringify(await fn()))};
