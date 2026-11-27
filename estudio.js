@@ -65,6 +65,12 @@ p.t{margin:.75em 0;line-height:1.65}
 .modo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 14px}.modo button{padding:16px;border-radius:14px;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 9%,var(--card));color:var(--tx);text-align:left;cursor:pointer}
 .modo button b{display:block;font-size:1.08em;color:var(--c)}.modo button small{color:var(--mut)}@media(max-width:600px){.modo{grid-template-columns:1fr}}
 .lnk{background:none;border:0;color:var(--mut);text-decoration:underline;cursor:pointer;font-size:13px;padding:4px}
+/* planning */
+.meses{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}.meta{border:2px solid #7c3aed55;background:linear-gradient(135deg,#7c3aed0d,#14b8a60d)}.meta input[type=date]{font-size:16px;padding:6px 8px}.chips{display:flex;gap:6px;flex-wrap:wrap}.adel{margin-top:8px}.adel summary{cursor:pointer;padding:6px 0}.mes h3{margin:0 0 8px;font-size:15px}.mes h3::first-letter{text-transform:uppercase}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cal .dh{font-size:11px;font-weight:800;color:var(--mut);text-align:center}
+.cd{min-height:48px;border-radius:8px;border:1px solid var(--bd);background:var(--card);padding:3px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;color:var(--tx);font:inherit}
+.cd b{font-size:13px}.cd small{font-size:10px;line-height:1.1;color:var(--mut)}.cd small.fe{color:#dc2626;font-weight:700}
+.cd.on{background:#7c3aed14;border-color:#7c3aed88}.cd.off{background:var(--bg);border-style:dashed}.cd.fu{opacity:.35;cursor:default}.cd.hoy{outline:2px solid #f59e0b;outline-offset:1px}
 /* home */
 .hero2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
 .hero2 .card{margin:0;padding:14px 16px}.hero2 .big2{font-size:28px;font-weight:800;line-height:1.1}
@@ -168,11 +174,13 @@ function paso(s,t,g,f=1){const ex=exam();
  if(ex>t&&s.reps){const mx=Math.max(1,Math.floor((ex-t)/DAY/2));if(s.ivl>mx){s.ivl=mx;s.due=t+mx*DAY}}return s}
 /* todo el estado se reconstruye desde el registro (así se fusionan los dispositivos sin conflictos) */
 const fac=cid=>(temario(),CACHE.NC[cid]=='memoria'?FMEM:1);
-function estado(){const E={},act={},fin={},reto={},xpd={},pl={},plx={},leido={},borra={};let xp=0,best=0;const h0=hoy0(),dias=new Set();
- for(const e of logs()){const d=fdia(e.t);let g=0;
+let EC={k:'',v:null};
+function estado(tmax){const L0=logs(),ck=(tmax||0)+'|'+L0.length+'|'+(L0.at(-1)?.t||0);if(EC.k==ck)return EC.v;const E={},act={},fin={},reto={},xpd={},pl={},plx={},leido={},borra={},dov={},vid={};let xp=0,best=0;const h0=hoy0(),dias=new Set();
+ for(const e of L0){if(tmax&&e.t>=tmax)continue;const d=fdia(e.t);let g=0;
   if(e.c){E[e.c]=paso(E[e.c]??nuevo(e.t),e.t,e.g,fac(e.c));E[e.c].g=e.g;g=e.g>1?3:1}
   else if(e.pl){(pl[e.pl]??={})[e.k]=e.t;const s=(plx[e.pl]??=new Set());if(!s.has(e.k)){s.add(e.k);g=2}}
   else if(e.leido){leido[e.leido]=e.t}else if(e.borra){borra[e.borra]=e.t}
+  else if(e.dia){dov[e.dia]=!!e.on}else if(e.vid){vid[e.vid]=!!e.ok;if(e.ok)g=5}
   else if(e.a){act[e.a]=act[e.a]||e.t}
   else if(e.fin){if(!fin[e.fin])g=30;fin[e.fin]=e.t}
   else if(e.x){(reto[e.x]??={})[e.q]=e.ok;g=e.ok?10:2}
@@ -180,7 +188,7 @@ function estado(){const E={},act={},fin={},reto={},xpd={},pl={},plx={},leido={},
   if(g){xp+=g;xpd[d]=(xpd[d]||0)+g;dias.add(d)}}
  for(const h of[Z().mine,...Object.values(Z().otros||{})])for(const s of h?.sesiones||[])if(s.fecha)dias.add(fdia(new Date(s.fecha)));
  let racha=0,dd=Date.now();if(!dias.has(fdia(dd)))dd-=DAY;while(dias.has(fdia(dd))){racha++;dd-=DAY}
- return{E,act,fin,reto,xp,hoy:xpd[fdia(Date.now())]||0,racha,best,h0,pl,leido,borra}}
+ EC={k:ck,v:{E,act,fin,reto,xp,hoy:xpd[fdia(Date.now())]||0,racha,best,h0,pl,leido,borra,dov,vid}};return EC.v}
 const nivel=xp=>{let n=1,need=60,acc=0;while(xp>=acc+need){acc+=need;n++;need=Math.round(need*1.25)}return{n,de:xp-acc,need}};
 const lab=(s,t)=>{const d=s.due-t;return d<36e5?Math.max(1,Math.round(d/MIN))+' min':d<DAY?Math.round(d/36e5)+' h':Math.round(d/DAY)+' d'};
 const hint=(c,g)=>{const t=Date.now(),e=ST.E[c.cid];return lab(paso(e?{...e}:nuevo(t),t,g,esMem(c)?FMEM:1),t)};
@@ -253,7 +261,8 @@ function home(){katexOn();const T=temario(),S0=estado(),{due,nw}=pendientes(S0),
  <div class=card>${ring}<small>Meta de hoy</small><div class=big2>${S0.hoy}<small style="font-size:14px;color:var(--mut)"> / ${meta} XP</small></div><small style="color:var(--mut)">${pm>=1?'¡cumplida! 🎉':'≈ '+Math.max(1,Math.round((meta-S0.hoy)/6))+' min más'}</small></div>
  <div class=card><small>Nivel ${L.n}</small><div class=big2>${S0.xp} XP</div><div class=xpb style="margin-top:6px"><i style="width:${100*L.de/L.need}%"></i></div><small style="color:var(--mut)">${L.need-L.de} XP para el nivel ${L.n+1}</small></div>
 </div>
-<div class=card><h2>🗺️ Misión de hoy <small style="font-weight:500;color:var(--mut)">· unos 20 min</small></h2><ul class=mis>
+<div class=card><div class=row><h2 style="margin:0">🗺️ Misión de hoy</h2><span class=sp></span><button class=btn onclick="EST.plan()">📅 Ver calendario</button></div>
+<div style="margin:12px 0 16px">${planHoy()}</div><div class=row style="margin-bottom:4px"><b>🧠 Además, para fijarlo</b></div><ul class=mis>
  <li class="${pend?'':'ok'}"><span class=st>${pend?1:'✓'}</span><span class=tx2 style="flex:1"><b>Repasa tus tarjetas</b><br><small style="color:var(--mut)">${pend?`${due.length} repasos + ${nw.length} nuevas · ~${Math.max(1,Math.round(pend/5))} min`:'nada pendiente ahora mismo'}</small></span>${pend?`<button class="btn pri" onclick="EST.cola(15)">Repasar</button>`:''}</li>
  <li class="${parteHoy?'ok':''}"><span class=st>${parteHoy?'✓':2}</span><span class=tx2 style="flex:1"><b>${sig?`📖 Teoría: ${esc(sig.tema)} · ${esc(sig.titulo)}`:'Toda la teoría leída'}</b><br><small style="color:var(--mut)">${sig?`${sig.pildoras.length} píldoras${sig.estrella?' · <span class=star>★ muy preguntado</span>':''}`:'¡bien! sigue con la práctica'}</small></span>${sig?`<button class="btn ${pend?'':'pri'}" onclick="EST.parte('${sig.tema}','${sig.id}','teo')">Leer</button>`:''}</li>
  ${sp2?`<li class="${praHoy?'ok':''}"><span class=st>${praHoy?'✓':'+'}</span><span class=tx2 style="flex:1"><b>🧠 Práctica: ${esc(sp2.tema)} · ${esc(sp2.titulo)}</b><br><small style="color:var(--mut)">recuerda, tarjetas y reto · ya has leído su teoría</small></span><button class=btn onclick="EST.parte('${sp2.tema}','${sp2.id}','pra')">Practicar</button></li>`:''}
@@ -404,8 +413,102 @@ function vRel(){const G=ST.G;katexOn();if(!G.l.length)return`<div class=es><h1>�
 let relT=null;function relTick(){clearTimeout(relT);if(ST.v!='rel'||ST.G.done)return;const el=$$('#rlt');if(Date.now()>=ST.G.fin){RR();return}
  if(el)el.textContent='⏱ '+Math.ceil((ST.G.fin-Date.now())/1e3)+' s';const b=$$('.es .eb i');if(b)b.style.width=100*(ST.G.fin-Date.now())/6e4+'%';relT=setTimeout(relTick,250)}
 
+/* ===================== PLANNING (hasta la fecha tope) =====================
+   - Días de estudio: lunes a viernes sin festivos de la Comunidad de Madrid; cada día se puede activar o desactivar.
+   - Cada mañana se recalcula con lo que llevas hecho: lo pendiente se reparte entre los días de estudio que quedan.
+   - Durante el día el plan de hoy no cambia (se calcula con tu avance a las 00:00).
+   - Tema hecho = teoría al 100 % en la app o marcado como leído. Vídeos: trozos de ≤ 75 min, cada uno con su check. */
+const FEST={'2026-12-07':'Día de la Constitución (trasladado)','2026-12-08':'Inmaculada Concepción','2026-12-25':'Navidad','2027-01-01':'Año Nuevo','2027-01-06':'Reyes'};
+const TIT={'COM-01':'La Constitución Española de 1978','COM-02':'La Unión Europea: tratados constitutivos y sistema institucional','COM-03':'La Administración General del Estado: organización y funcionamiento','COM-04':'Las Comunidades Autónomas: Estatutos de Autonomía y organización institucional','COM-05':'Las fuentes del derecho administrativo: concepto y clases','COM-06':'El acto administrativo: concepto, elementos y clases','COM-07':'Nulidad y anulabilidad de los actos administrativos','COM-08':'Procedimientos administrativos especiales y sus fases','COM-09':'Los contratos del sector público','COM-10':'Régimen jurídico del empleo público en las Administraciones públicas','COM-11':'Protección de datos, transparencia y gobierno abierto','COM-12':'Políticas de igualdad efectiva de mujeres y hombres',
+'ESP-01':'Funciones y estructura orgánica de la DG del Instituto Geográfico Nacional','ESP-02':'La Ley de Ordenación de la Cartografía (Ley 7/1986) y la LISIGE (Ley 14/2010)','ESP-03':'El Sistema Cartográfico Nacional','ESP-04':'La Ley Reguladora de Bases del Régimen Local (Ley 7/1985)','ESP-05':'Las leyes sobre reutilización de la información del sector público','ESP-06':'La Ley de Señales Geodésicas y Geofísicas',
+'ESP-07':'Sistemas de referencia y tiempo','ESP-08':'El campo de la gravedad','ESP-09':'El geoide: definición','ESP-10':'El modelo geodésico terrestre','ESP-11':'Cotas geopotenciales y altitudes','ESP-12':'Observaciones de la gravedad','ESP-13':'VLBI, SLR y DORIS','ESP-14':'Sistemas GNSS','ESP-15':'Observables GNSS','ESP-16':'Fuentes de error en GNSS','ESP-17':'Sistemas de corrección diferencial en GNSS','ESP-18':'Métodos de transformación entre sistemas geodésicos de referencia','ESP-19':'Redes geodésicas: tipos, diseño y observación','ESP-20':'Compensación de una red geodésica','ESP-21':'Estructura interna de la Tierra: corteza, manto, núcleo','ESP-22':'Tectónica de placas','ESP-23':'Parámetros focales de un terremoto','ESP-24':'Métodos de localización de un terremoto','ESP-25':'Instrumentación sísmica','ESP-26':'El fenómeno volcánico: geodinámica','ESP-27':'Sismicidad volcánica','ESP-28':'El campo magnético terrestre','ESP-29':'Observación del campo magnético terrestre',
+'ESP-30':'Visión estereoscópica: fundamentos y sistemas','ESP-31':'Cálculo y georreferenciación de trayectorias de vuelos','ESP-32':'Adquisición de imágenes con sensores aerotransportados','ESP-33':'Orientación relativa y absoluta de pares fotogramétricos','ESP-34':'Procesamiento de imágenes aéreas y producción de ortoimágenes','ESP-35':'Fundamentos de la tecnología LiDAR','ESP-36':'Procesamiento de datos LiDAR aerotransportados','ESP-37':'Productos derivados de una nube de puntos LiDAR','ESP-38':'Datos de imagen, LiDAR y teledetección para Gemelos Digitales','ESP-39':'Fundamentos físicos de la Teledetección','ESP-40':'Corrección geométrica de imágenes de satélite','ESP-41':'Teledetección por Radar','ESP-42':'Clasificación automática de imágenes multiespectrales','ESP-43':'Programa europeo Copernicus de Observación de la Tierra','ESP-44':'Información de ocupación del suelo (SIOSE)','ESP-45':'Ocupación del suelo en Europa y en el mundo','ESP-46':'Errores y su clasificación','ESP-47':'Medida de ángulos y distancias: instrumentos y errores','ESP-48':'Métodos topográficos clásicos: triangulación, intersecciones y poligonación','ESP-49':'Métodos topográficos clásicos: nivelación','ESP-50':'Levantamientos topográficos con GNSS','ESP-51':'Líneas límite jurisdiccionales de términos municipales',
+'ESP-52':'Proyecciones conformes','ESP-53':'Proyecciones equidistantes y equivalentes','ESP-54':'Proyecciones cilíndricas y pseudocilíndricas','ESP-55':'Proyecciones cónicas y pseudocónicas','ESP-56':'Definición de cartografía y mapas','ESP-57':'Generalización cartográfica','ESP-58':'Información Geográfica de Referencia y Datos de Alto Valor','ESP-59':'Producción de Bases de Datos de Información Geográfica','ESP-60':'Bases de Datos de Información Geográfica del IGN','ESP-61':'El Mapa Topográfico Nacional 1:25 000 y 1:50 000','ESP-62':'Cartografía derivada del IGN','ESP-63':'Cartografía temática','ESP-64':'Sistemas de Información Geográfica','ESP-65':'El modelo vectorial','ESP-66':'El modelo espacial ráster','ESP-67':'Modelado de datos (UML)','ESP-68':'Infraestructuras de Datos Espaciales','ESP-69':'Servicios de visualización INSPIRE (WMS, WMTS)','ESP-70':'Servicios de localización INSPIRE (CSW)','ESP-71':'Servicios de descarga INSPIRE (WFS, ATOM, WCS)','ESP-72':'Normativa europea en materia de metadatos','ESP-73':'Bases de datos espaciales','ESP-74':'Lenguajes y herramientas para redes globales',
+'ANE-01':'Anexo 1','ANE-02':'Anexo 2','ANE-03':'Anexo 3'};
+const BLQ=t=>t.startsWith('COM')?'COM':t.startsWith('ANE')?'ANE':(+t.slice(4)<=6?'A':+t.slice(4)<=29?'B':+t.slice(4)<=51?'C':'D');
+const VID=[['A','Instituciones de la Unión Europea',11],['A','Fuentes del Derecho de la Unión Europea',18],
+['B','Fundamentos de cálculo: gradiente, rotacional y divergencia',10],['B','Geodesia. Temas comunes parte I',119],['B','Sistemas de altitudes',32],['B','Fundamentos de sistemas GNSS – parte I',101],['B','Fundamentos de sistemas GNSS – parte II',173],['B','Métodos de posicionamiento GNSS',47],['B','Técnicas de geodesia espacial',37],['B','Sistemas ITRS y ETRS89. Marcos de referencia asociados',70],['B','Geofísica. Temas comunes parte I',121],['B','Tipos de márgenes de placas con animaciones',20],['B','Sismogramas simples. Conceptos básicos',2],['B','Sismicidad volcánica',6],['B','Geofísica. Temas comunes parte II',83],['B','Sismómetros, redes sísmicas e interpretación de sismogramas',84],['B','Conferencia del IGN sobre la erupción de La Palma (2021)',74],['B','Geomagnetismo IGN',4],['B','Geomagnetismo (en inglés)',3],
+['C','Fundamentos sensor LiDAR',6],['C','Modelos 3D: nubes LiDAR frente a fotogrametría (DIM)',5],['C','LiDAR, MDEs y teledetección',125],['C','Métodos de resampling en teledetección',11],['C','Ocupación del suelo, teoría de errores y cartografía temática',109],['C','Media aritmética y desviación típica de una serie',5],['C','Media, moda y mediana',6],['C','Medición directa',7],['C','Mediciones indirectas',12],
+['D','Cartografía matemática – parte común',108],['D','Modelado UML',50],['D','Operadores SIG',72],['D','Infraestructuras de Datos Espaciales (IDE)',13],['D','INSPIRE, LISIGE y OGC',28],['D','Metadatos y GeoDCAT',23]];
+const hm=m=>{m=Math.round(m);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')};
+const hmL=m=>{m=Math.round(m);const h=Math.floor(m/60),r=m%60;return h?(r?`${h} h ${r} min`:`${h} h`):`${r} min`};
+const VCH=VID.flatMap((v,i)=>{const n=Math.ceil(v[2]/75),L=v[2]/n;return Array.from({length:n},(_,k)=>({id:`v${i}_${k}`,vi:i,b:v[0],tit:v[1],k,n,a:Math.round(k*L),z:Math.round((k+1)*L),min:Math.round((k+1)*L)-Math.round(k*L)}))});
+const ymd=d=>{d=new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fLarga=s=>new Date(s+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+const pcfg=()=>{const c=cfgs();return{fin:c.pfin||'2027-01-29',h:+c.ph||5.5,orden:String(c.porden||'B C D A COM ANE').toUpperCase().split(/[\s,;]+/).filter(Boolean)}};
+const diaOn=(s,dov)=>{if(s in dov)return dov[s];const w=new Date(s+'T12:00').getDay();return w>0&&w<6&&!FEST[s]};
+/* avance de un tema: teoría de la app (o marcado leído); sin archivo de estudio, solo «leído» */
+function teoTema(t,S0){const T=tema(t);if(T)return resT(T,S0).teo;return(S0.leido[t]||0)>(S0.borra[t]||0)?1:0}
+function ordenItems(){const o=pcfg().orden,todos=Object.keys(TIT),bs=[...o,...['B','C','D','A','COM','ANE'].filter(b=>!o.includes(b))],out=[];
+ for(const b of [...new Set(bs)]){const ts=todos.filter(t=>BLQ(t)==b),vs=VCH.filter(c=>c.b==b),m=vs.length,n=ts.length;
+  if(!n){vs.forEach(c=>out.push({k:'v',c,b}));continue}
+  /* cada trozo de vídeo va detrás del tema que le toca, repartidos de forma uniforme por el bloque */
+  const pos=vs.map((_,j)=>Math.min(n-1,Math.floor((j+1)*n/(m+1))));
+  ts.forEach((t,i)=>{out.push({k:'t',t,b});vs.forEach((c,j)=>{if(pos[j]==i)out.push({k:'v',c,b})})})}
+ return out}
+let PC={k:'',v:null};
+function plan(){const pc=pcfg(),h0=hoy0(),S0=estado(h0),S=estado(),hoy=ymd(h0),k=[h0,logs().length,JSON.stringify(pc),Object.keys(Z().est||{}).length].join('|');
+ if(PC.k==k)return PC.v;
+ const dias=[];for(let d=new Date(hoy+'T12:00');ymd(d)<=pc.fin;d.setDate(d.getDate()+1)){const s=ymd(d);if(diaOn(s,S.dov))dias.push(s)}
+ const cap=pc.h*60,its=ordenItems().map(x=>x.k=='t'?{...x,r:1-teoTema(x.t,S0)}:{...x,r:S0.vid[x.c.id]?0:1}).filter(x=>x.r>0.001);
+ const remT=its.filter(x=>x.k=='t').reduce((a,x)=>a+x.r,0),remV=its.filter(x=>x.k=='v').reduce((a,x)=>a+x.c.min,0),nd=Math.max(1,dias.length);
+ /* tiempo por tema FIJO (tu jornada con el plan de referencia: 40 días del 30/11 al 29/01). Así, si adelantas, la carga diaria baja; si acercas la fecha límite, sube */
+ const T=Math.max(45,Math.min(240,(cap*40-VID.reduce((a,v)=>a+v[2],0))/Object.keys(TIT).length));
+ its.forEach(x=>x.w=x.k=='t'?x.r*T:x.c.min);
+ const L=its.reduce((a,x)=>a+x.w,0),B=L/nd,dia=dias.map(()=>[]);let cum=0;
+ /* cada tarea va al día que le toca por trabajo acumulado: el reparto queda equilibrado y no se amontona nada al final */
+ for(const x of its){const d=Math.min(nd-1,Math.floor((cum+x.w/2)/B));if(dias.length)dia[d].push(x);cum+=x.w}
+ PC={k,v:{dias,dia,T,B,L,cap,remT,remV,hoy,hoyOn:dias[0]==hoy,S0}};return PC.v}
+const hechoIt=(x,S)=>x.k=='t'?teoTema(x.t,S)>=.999:!!S.vid[x.c.id];
+function liIt(x,S,peq){const ok=hechoIt(x,S);
+ if(x.k=='t'){const T=tema(x.t),tp=teoTema(x.t,S);
+  return`<li class="${ok?'ok':''}"><span class=st>${ok?'✓':'📖'}</span><span class=tx2 style="flex:1"><b style="color:${({A:'#2563eb',B:'#0d9488',C:'#ea580c',D:'#db2777',COM:'#7c3aed'})[x.b]||'inherit'}">${esc(x.t)}</b> <b>${esc(TIT[x.t]||'')}</b><br><small style="color:var(--mut)">${x.r<.999?`te quedaba el ${Math.round(100*x.r)} % · `:''}≈ ${hmL(x.w)}${!ok&&tp>0&&tp<1?` · llevas ${Math.round(100*tp)} %`:''}${T?'':' · aún no está en la app: márcalo al leerlo'}</small></span>
+  ${peq?'':T&&!ok?`<button class="btn pri" onclick="EST.teo('${x.t}')">Leer</button>`:''}<button class=btn onclick="EST.pleido('${x.t}')">${ok?'↺':'✓ Leído'}</button></li>`}
+ const c=x.c;return`<li class="${ok?'ok':''}"><span class=st>${ok?'✓':'🎬'}</span><span class=tx2 style="flex:1"><b>${esc(c.tit)}</b><br><small style="color:var(--mut)">vídeo bloque ${c.b} · ${c.n>1?`parte ${c.k+1} de ${c.n}: del ${hm(c.a)} al ${hm(c.z)} (${hmL(c.min)})`:hmL(c.min)}</small></span><button class=btn onclick="EST.pvid('${c.id}',${ok?0:1})">${ok?'↺':'✓ Visto'}</button></li>`}
+/* bloque «Planning de hoy» para la misión de hoy y el Panel */
+function planHoy(peq){const P=plan(),S=estado();if(!P.dias.length)return`<p class=sub>No quedan días de estudio hasta la fecha tope (${esc(pcfg().fin)}). <a href="#" onclick="EST.plan();return false">Cámbiala</a>.</p>`;
+ if(!P.hoyOn){const sig=P.dia[0]||[];return`<div class="bx idea" style="margin-top:0"><span class=bh>📅 Hoy no es día de estudio${FEST[P.hoy]?' · '+esc(FEST[P.hoy]):''}</span>Descansa sin culpa. Si te apetece adelantar, esto es lo del ${esc(fLarga(P.dias[0]))}; lo que hagas hoy se descuenta del planning mañana.</div>
+  <ul class=mis>${sig.map(x=>liIt(x,S,peq)).join('')}</ul>`}
+ const hoy=P.dia[0],n=hoy.filter(x=>hechoIt(x,S)).length,todo=n==hoy.length,
+  ade=P.dia.slice(1).flat().filter(x=>hechoIt(x,S)),adw=ade.reduce((a,x)=>a+x.w,0),pc=pcfg();
+ return`<div class=row style="margin-bottom:4px"><b>📅 Planning de hoy</b><span class=sp></span><span class="pill ${todo?'gn':'vi'}">${n}/${hoy.length} hecho · ≈ ${hmL(hoy.reduce((a,x)=>a+x.w,0))}</span></div>
+ <p class=sub style="margin:0 0 6px">🎯 Todo leído y visto para el <b>${esc(fLarga(pc.fin))}</b> · <a href="#" style="color:#7c3aed;font-weight:600" onclick="EST.plan();return false">cambiar fecha</a></p>
+ <ul class=mis>${hoy.map(x=>liIt(x,S,peq)).join('')}</ul>
+ ${adw?`<div class="bx ejemplo"><span class=bh>🚀 Has adelantado ≈ ${hmL(adw)}</span>Mañana se recalcula y los próximos días van más ligeros.</div>`:''}
+ ${todo&&P.dia[1]?`<details class=adel ${adw?'open':''}><summary><b>➕ ¡Hoy completado! ¿Adelantas lo del ${esc(fLarga(P.dias[1]))}?</b></summary><ul class=mis>${P.dia[1].map(x=>liIt(x,S,peq)).join('')}</ul></details>`:''}`}
+function vPlan(){const P=plan(),S=estado(),pc=pcfg(),carga=P.dias.length?P.L/P.dias.length:0,dur=P.remV,tot=VID.reduce((a,v)=>a+v[2],0);
+ const meses=[],ini=new Date(ymd(Date.now())+'T12:00'),fin=new Date(pc.fin+'T12:00');
+ for(let m=new Date(ini.getFullYear(),ini.getMonth(),1);m<=fin;m.setMonth(m.getMonth()+1))meses.push(new Date(m));
+ const idx={};P.dias.forEach((s,i)=>idx[s]=i);
+ const cal=meses.map(m=>{const y=m.getFullYear(),mo=m.getMonth(),first=(new Date(y,mo,1).getDay()+6)%7,nd=new Date(y,mo+1,0).getDate();let c='';
+  for(let i=0;i<first;i++)c+='<i></i>';
+  for(let d=1;d<=nd;d++){const s=ymd(new Date(y,mo,d,12)),fuera=s<ymd(Date.now())||s>pc.fin,on=diaOn(s,S.dov),it=idx[s]!=null?P.dia[idx[s]]:[],nt=it.filter(x=>x.k=='t').length,nv=it.filter(x=>x.k=='v').length;
+   c+=`<button class="cd ${fuera?'fu':on?'on':'off'} ${s==P.hoy?'hoy':''}" ${fuera?'disabled':`onclick="EST.pdia('${s}')"`} title="${esc(FEST[s]||'')}${fuera?'':on?' · día de estudio (pulsa para librarlo)':' · libre (pulsa para estudiar)'}"><b>${d}</b>${FEST[s]?'<small class=fe>festivo</small>':''}${it.length?`<small>${nt?nt+'📖':''}${nv?' '+nv+'🎬':''}</small>`:''}</button>`}
+  return`<div class=mes><h3>${m.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</h3><div class=cal>${['L','M','X','J','V','S','D'].map(x=>`<span class=dh>${x}</span>`).join('')}${c}</div></div>`}).join('');
+ return`<div class=es><p><button class=btn onclick="EST.home()">◀ Estudiar</button></p><h1>📅 Planning hasta el ${esc(fLarga(pc.fin))}</h1>
+ <p class=sub>Cada mañana se recalcula con lo que llevas: si adelantas, los días siguientes se aligeran; si un día no llegas, lo pendiente se reparte entre los que quedan.</p>
+ <div class="card meta"><div class=row style="gap:14px;align-items:center">
+  <div><b>🎯 Fecha límite</b><br><small style="color:var(--mut)">para tener todo leído y visto</small></div>
+  <input type=date id=pfin value="${esc(pc.fin)}" min="${ymd(Date.now())}" onchange="EST.pcfg()">
+  <span class=chips>${[['2027-01-15','15 ene'],['2027-01-22','22 ene'],['2027-01-29','29 ene'],['2027-02-05','5 feb']].map(([v,t])=>`<button class="btn ${v==pc.fin?'pri':''}" onclick="EST.pfin('${v}')">${t}</button>`).join('')}</span>
+  <label style="margin-left:auto">Horas al día <input type=number id=ph min=1 max=12 step=.5 value="${pc.h}" style="width:70px" onchange="EST.pcfg()"></label></div>
+  <p class=sub style="margin:8px 0 0">Al cambiarla se reparte todo lo pendiente entre los días de estudio que quedan hasta esa fecha. Y si un día haces de más, lo que adelantes se quita de los días siguientes.</p></div>
+ <div class=hero2>
+  <div class=card><small>Días de estudio que quedan</small><div class=big2>${P.dias.length}</div><small style="color:var(--mut)">${P.hoyOn?'contando hoy':'a partir del '+esc(P.dias[0]?fLarga(P.dias[0]):'—')}</small></div>
+  <div class=card><small>Temas por leer</small><div class=big2>${(Math.round(P.remT*10)/10).toString().replace('.',',')}</div><small style="color:var(--mut)">de ${Object.keys(TIT).length} (86 temas + 3 anexos)</small></div>
+  <div class=card><small>Vídeo pendiente</small><div class=big2>${hm(dur)}</div><small style="color:var(--mut)">de ${hm(tot)} en total</small></div>
+  <div class=card><small>Carga por día</small><div class=big2 style="color:${carga>P.cap*1.05?'#dc2626':'#16a34a'}">${hmL(carga)}</div><small style="color:var(--mut)">tu jornada: ${hmL(P.cap)} · ≈ ${hmL(P.T)} por tema</small></div>
+ </div>
+ ${carga>P.cap*1.05?`<div class="bx ojo"><span class=bh>Vas justo</span>Con los días que quedan necesitarías unas ${hmL(carga)} al día. Activa algún día libre en el calendario, sube tus horas o mueve la fecha límite.</div>`:''}
+ <div class=card><h2>Calendario <small style="font-weight:500;color:var(--mut)">· pulsa un día para estudiarlo o librarlo</small></h2><div class=meses>${cal}</div>
+  <div class=legend><span><b style="background:#7c3aed22;border:1px solid #7c3aed"></b>día de estudio</span><span><b style="background:var(--bg);border:1px dashed var(--bd)"></b>libre</span><span><b style="border:2px solid #f59e0b"></b>hoy</span><span>📖 temas · 🎬 vídeos</span></div></div>
+ <div class=card><h2>Día a día</h2>${P.dias.map((s,i)=>`<details ${i<3?'open':''} style="border-top:1px solid var(--bd);padding:8px 0"><summary style="cursor:pointer"><b>${s==P.hoy?'Hoy · ':''}${esc(fLarga(s))}</b> <small style="color:var(--mut)">· ${P.dia[i].length} tareas · ≈ ${hmL(P.dia[i].reduce((a,x)=>a+x.w,0))}</small></summary><ul class=mis>${P.dia[i].map(x=>liIt(x,S,1)).join('')}</ul></details>`).join('')||'<p class=sub>Nada pendiente. ¡Todo leído y visto!</p>'}</div>
+ <details class=card><summary style="cursor:pointer;font-weight:700">⚙️ Ajustes del planning</summary><div class=row style="margin-top:12px;gap:14px">
+  <label>Orden de bloques <input id=porden value="${esc(pc.orden.join(' '))}" style="width:200px" onchange="EST.pcfg()"></label></div>
+  <p class=sub style="margin:8px 0 0">Bloques: B, C, D, A, COM (comunes) y ANE (anexos). Festivos de la Comunidad de Madrid ya marcados: 7 y 8 de diciembre, 25 de diciembre, 1 y 6 de enero.</p></details></div>`}
+
 /* ============ API pública ============ */
-window.vEstudio=()=>{if(!(QZ.Z&&QZ.Z.rev))return'<p class=sub>Cargando…</p>';const h=({home,tema:vTema,parte:vParte,ses:vSes,chul:vChul,rel:vRel}[ST.v]||home)();
+window.vEstudio=()=>{if(!(QZ.Z&&QZ.Z.rev))return'<p class=sub>Cargando…</p>';const h=({home,tema:vTema,parte:vParte,ses:vSes,chul:vChul,rel:vRel,plan:vPlan}[ST.v]||home)();
  if(ST.v=='rel')setTimeout(relTick);return`<div style="--fs:${cfgs().fs||17}px">${h}</div>`};
 window.EST={
  home(){ST={v:'home'};R()},tema(t){ST={v:'tema',t};R()},chuleta(t){ST={v:'chul',t};R()},
@@ -418,6 +521,12 @@ window.EST={
  borraL(key){const tm=!key.includes(':');if(!confirm(tm?`¿Borrar el avance de lectura de ${key}? La práctica (tarjetas, retos) no se toca.`:'¿Borrar la lectura de esta parte? La práctica no se toca.'))return;
   apunta({borra:key});const pos=Z().rev.pos||{};for(const k of Object.keys(pos))if(k==key||k.startsWith(key+':'))delete pos[k];save();tst('Avance de lectura borrado');RR()},
  anillo,
+ plan(){ST={v:'plan'};R()},
+ pleido(t){const S=estado();if(teoTema(t,S)>=.999){if(!confirm(`¿Quitar ${t} como leído? Solo se borra la lectura; la práctica no se toca.`))return;apunta({borra:t});const pos=Z().rev.pos||{};for(const k of Object.keys(pos))if(k.startsWith(t+':'))delete pos[k];save()}else{apunta({leido:t});tst(t+' leído 📖✓')}RR()},
+ pvid(id,ok){apunta({vid:id,ok:!!ok});if(ok)tst('Vídeo visto 🎬✓');RR()},
+ pdia(s){const S=estado(),on=diaOn(s,S.dov);apunta({dia:s,on:!on});tst(on?'Día libre: el planning se reparte en los demás':'Día de estudio añadido');RR()},
+ pcfg(){let f=$$('#pfin').value;const h=+$$('#ph').value;if(f&&f<ymd(Date.now())){tst('La fecha límite no puede ser anterior a hoy');f=pcfg().fin}Z().rev.cfg={...cfgs(),pfin:f||'2027-01-29',ph:h>0?h:5.5,porden:$$('#porden').value,ts:Date.now()};save();RR()},
+ pfin(f){$$('#pfin').value=f;EST.pcfg()},
  pk(d){const P=part(ST.t,ST.p);ST.k=Math.max(0,Math.min(P.pildoras.length-1,ST.k+d));(Z().rev.pos??={})[ST.t+':'+ST.p]={s:1,k:ST.k};save();R()},
  chk(key,j){(ST.ck??={})[key]=j;RR()},
  comp(){const a=$$('#nt');if(a){(Z().rev.notas??={})[ST.t+':'+ST.p]={x:a.value,t:Date.now()};save()}ST.cmp={};RR()},
@@ -442,7 +551,7 @@ window.EST={
  confeti,
  async borra(n){if(!confirm('¿Borrar «'+n+'» de todos tus dispositivos? Se pierde el progreso de sus tarjetas.'))return;await QZ.borrarEst(n);CACHE.sig='';tst('Borrado. Pulsa «Conectar y sincronizar» para quitarlo también de Drive.');RR()},
  zoom(el){const i=el.querySelector('img');if(!i)return;const d=document.createElement('div');d.className='zoom';d.innerHTML=`<img src="${i.src}">`;d.onclick=()=>d.remove();document.body.appendChild(d)},
- cfg(){Z().rev.cfg={examen:$$('#ex').value,nuevas:Math.max(0,+$$('#nu').value||0),meta:Math.max(10,+$$('#me').value||60),fs:+$$('#fs').value||17,ts:Date.now()};save();RR()},
+ cfg(){Z().rev.cfg={...cfgs(),examen:$$('#ex').value,nuevas:Math.max(0,+$$('#nu').value||0),meta:Math.max(10,+$$('#me').value||60),fs:+$$('#fs').value||17,ts:Date.now()};save();RR()},
  /* tarjeta-resumen para el Panel */
  /* progreso de estudio por tema, para el Panel: parte completada = 1, empezada = ½ */
  /* para el Panel: pct = teoría (0–100), prac = práctica completada (0–100), ok/n = aciertos de práctica */
@@ -450,6 +559,7 @@ window.EST={
   o[t.tema]={partes:t.partes.length,pct:Math.round(100*r.teo),prac:Math.round(100*r.prac),cal:r.cal,ok:r.ok,n:r.n}}return o},
  resumen(){if(!(QZ.Z&&QZ.Z.rev))return'';const T=temario();if(!T.length)return'';const S0=estado(),{due,nw}=pendientes(S0),sig=siguiente(S0),ex=exam(),now=Date.now();
   return`<div class="card mt" style="border:2px solid #7c3aed55"><div class=row><h2 style="margin:0">🧠 Misión de hoy</h2><span class=sp></span><span class=badge>🔥 ${S0.racha} ${S0.racha==1?'día':'días'}</span><span class=badge>${S0.hoy}/${cfgs().meta||60} XP hoy</span>${ex>now?`<span class=badge>${Math.ceil((ex-now)/DAY)} días para el examen</span>`:''}</div>
+  <div style="margin:12px 0 4px">${planHoy(1)}</div>
   <p style="margin:10px 0">${due.length+nw.length?`<b>${due.length+nw.length}</b> ${due.length+nw.length==1?'tarjeta pendiente':'tarjetas pendientes'}`:'Tarjetas al día'}${sig?` · teoría siguiente: <b>${esc(sig.tema)} · ${esc(sig.titulo)}</b>`:''}</p><button class="btn pri" onclick="go('estudio')">Empezar a estudiar ▶</button></div>`}};
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select')||e.ctrlKey||e.metaKey)return;const k=e.key.toLowerCase();
  if(typeof S!=='undefined'&&S.view!=='estudio')return;
